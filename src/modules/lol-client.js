@@ -3,9 +3,25 @@
 let fs = require("fs");
 let winreg = require("winreg");
 let spawn = require("child_process").spawn;
+let _ = require("underscore");
 
 let leaguePath = false;
 let leagueVersion = "";
+let regexLocations = [{
+	hive: winreg.HKCU,
+	keys: [
+		"\\Software\\Riot Games\\RADS",
+		"\\Software\\Wow6432Node\\Riot Games\\RADS",
+		"\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Wow6432Node\\RIOT GAMES\\RADS",
+		"\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\RIOT GAMES\\RADS",
+	]
+},{
+	hive: winreg.HKLM,
+	keys: [
+		"\\Software\\Wow6432Node\\Riot Games\\RADS",
+		"\\Software\\RIOT GAMES\\RADS",
+	]
+}];
 
 // Try and find the league of legends client
 let checkPath = function() {
@@ -33,6 +49,22 @@ let checkPath = function() {
 	}
 };
 
+// Try and find the specified registry key
+let findRegKey = function(hive, key, callback) {
+	let regKey = new winreg({
+		hive: hive,
+		key:  key
+	});
+	regKey.get("LocalRootFolder", function(err, item) {
+		if (err) {
+			console.log("Couldn't find registry key " + hive + key);
+			callback()
+		} else {
+			callback(item.value);
+		}
+	});
+};
+
 module.exports = {
 	isFound: function() {
 		return leaguePath !== false;
@@ -41,36 +73,33 @@ module.exports = {
 		return leagueVersion;
 	},
 	find: function() {
+		leaguePath = false;
+		leagueVersion = "";
+		
 		if (process.platform == "win32") {
-			// Try getting the key from the win32 registry
-			let regKey = new winreg({
-				hive: winreg.HKCU,
-				key:  "\\Software\\Riot Games\\RADS"
-			});
-			regKey.get("LocalRootFolder", function(err, item) {
-				if (err) {
-					console.log("Couldn't find registry key HKCU\\Software\\Riot Games\\RADS");
-					
-					// Try getting the key from the win64 registry
-					regKey = new winreg({
-						hive: winreg.HKCU,
-						key:  "\\Software\\Wow6432Node\\Riot Games\\RADS"
-					});
-					regKey.get("LocalRootFolder", function(err, item) {
-						if (err) {
-							console.log("Couldn't find registry key HKCU\\Software\\Wow6432Node\\Riot Games\\RADS");
-						} else {
-							leaguePath = item.value;
-							console.log("Possible LoL client @ " + leaguePath);
-							checkPath();
+			// Try finding the key in all the registry locations
+			let possiblePaths = [];
+			let c = 0;
+			let num = _.reduce(regexLocations, function(memo, item) { return memo + item.keys.length; }, 0);
+			for (let i = 0; i < regexLocations.length; i++) {
+				for (let j = 0; j < regexLocations[i].keys.length; j++) {
+					findRegKey(regexLocations[i].hive, regexLocations[i].keys[j], function(path) {
+						if (path && !_.contains(possiblePaths, path)) {
+							possiblePaths.push(path);
+						}
+						c++;
+						
+						if (c == num) {
+							for (let k = 0; k < possiblePaths.length; k++) {
+								console.log("Checking possible LoL client @ " + possiblePaths[k]);
+								leaguePath = possiblePaths[k];
+								if (checkPath())
+									break;
+							}
 						}
 					});
-				} else {
-					leaguePath = item.value;
-					console.log("Possible LoL client @ " + leaguePath);
-					checkPath();
 				}
-			});
+			}
 		} else if (process.platform == "darwin") {
 			fs.access("/Applications/League of Legends.app", function(err) {
 				if (err) {
