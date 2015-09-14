@@ -1,0 +1,61 @@
+body {
+    color: #333333;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-size: 1em;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5em;
+    display: inline-block;
+    position: relative;
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+.aof {
+    background-color: #3598db;
+}
+
+.aof.md-button {
+    position: absolute;
+    left: 3px;
+}
+
+.content {
+    margin-top: 50px;
+}
+
+.client-found-true {
+    color: green;
+}
+
+.client-found-false {
+    color: red;
+}
+
+.title {
+    font-size: 1.3em;
+}
+
+.load-file {
+
+}
+
+.play-replay {
+
+}
+
+.spell1 {
+    position: relative;
+    left: 0px;
+    top: 0px;
+    width: 23px;
+    height: 23px;
+}
+
+.spell2 {
+    position: relative;
+    left: 0px;
+    top: 2px;
+    width: 23px;
+    height: 23px;
+}

@@ -1,0 +1,20 @@
+<md-toolbar>
+    <div class="md-toolbar-tools">
+        <span id="md-toolbar-title">AnalyzeOrFeed Replay Client</span>
+        <span flex></span>
+        <span ng-show="aofClientInfo.newVersion" ng-click="showAofClientInfo($event)">Update available!</span>
+        <md-menu>
+            <md-button aria-label="Open demo menu" class="md-icon-button" ng-click="$mdOpenMenu($event)">
+                <md-icon>settings</md-icon>
+            </md-button>
+            <md-menu-content width="3">
+                <md-menu-item ng-repeat="item in settings">
+                    <md-button ng-click="announceClick($index)">
+                        <md-icon>folder</md-icon>
+                        {{item.name}}
+                    </md-button>
+                </md-menu-item>
+            </md-menu-content>
+        </md-menu>
+    </div>
+</md-toolbar>

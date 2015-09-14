@@ -1,0 +1,16 @@
+{
+  "name": "aof-replay-client",
+  "version": "0.1.0",
+  "main": "./index.js",
+  "scripts": {
+    "start": "./node_modules/.bin/electron ."
+  },
+  "author": "Analyze Or Feed",
+  "license": "MIT",
+  "devDependencies": {
+    "express": "^4.13.3",
+    "request": "^2.61.0",
+    "winreg": "0.0.12",
+    "underscore": "^1.8.3"
+  }
+}

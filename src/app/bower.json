@@ -1,0 +1,16 @@
+{
+  "name": "aof-replay-client",
+  "version": "0.1.0",
+  "authors": [
+    "AnalyzeOrFeed <admin@aof.com>"
+  ],
+  "description": "AnalyzeOrFeed Replay Client",
+  "license": "MIT",
+  "homepage": "http://www.aof.gg",
+  "dependencies": {
+    "angular": "*",
+    "angular-material": "*",
+    "angular-route": "*",
+    "material-design-icons-iconfont": "*"
+  }
+}
