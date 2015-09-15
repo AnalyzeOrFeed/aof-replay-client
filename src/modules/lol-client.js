@@ -6,6 +6,7 @@ let spawn = require("child_process").spawn;
 let _ = require("underscore");
 
 let leaguePath = false;
+let fullPath = false;
 let leagueVersion = "";
 let regexLocations = [{
 	hive: winreg.HKCU,
@@ -24,33 +25,49 @@ let regexLocations = [{
 }];
 
 // Try and find the league of legends client
-let checkPath = function() {
-	try {
-		let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
-		
-		let files = fs.readdirSync(logPath);		
-		files.sort(function(a, b) {
-			return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
-		});
-		let content = fs.readFileSync(logPath + files[0], "utf8");
-		leagueVersion = content.substring(content.indexOf("Build Version:") + 15, content.indexOf("[PUBLIC]") - 1);
-		console.log("LoL client version is: " + leagueVersion);
-		
-		files = fs.readdirSync(leaguePath + "/solutions/lol_game_client_sln/releases/");
-		leaguePath += "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
-		console.log("Complete league path is " + leaguePath);
-		
-		return true;
-	} catch (err) {
-		console.log("Did not recognize " + leaguePath + "/solutions/lol_game_client_sln/releases/ as a LoL client directory: " + err);
+function checkPath(callback) {
+	let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
+	
+	var errorCallback = function(err) {
+		console.log("Error checking path " + logPath + ": " + err);
 		leaguePath = false;
 		leagueVersion = "";
-		return false;
-	}
+		callback(false);
+	};
+	
+	fs.readdir(logPath, function(err, files) {
+		if (err) {
+			errorCallback(err);
+		} else {
+			files.sort(function(a, b) {
+				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
+			});
+			
+			fs.readFile(logPath + files[0], "utf8", function(err, content) {
+				if (err) {
+					errorCallback(err);
+				} else {
+					leagueVersion = content.substring(content.indexOf("Build Version:") + 15, content.indexOf("[PUBLIC]") - 1);
+					console.log("LoL client version is: " + leagueVersion);
+					
+					fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
+						if (err) {
+							errorCallback(err);
+						} else {
+							fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
+							console.log("Complete league path is " + fullPath);
+							
+							callback(true);
+						}
+					});
+				}
+			});
+		}
+	});
 };
 
 // Try and find the specified registry key
-let findRegKey = function(hive, key, callback) {
+function findRegKey(hive, key, callback) {
 	let regKey = new winreg({
 		hive: hive,
 		key:  key
@@ -65,17 +82,21 @@ let findRegKey = function(hive, key, callback) {
 	});
 };
 
-module.exports = {
-	isFound: function() {
-		return leaguePath !== false;
-	},
-	version : function() {
-		return leagueVersion;
-	},
-	find: function() {
-		leaguePath = false;
-		leagueVersion = "";
-		
+// Try and find the league client
+function find(hintPath, callback) {
+	leaguePath = false;
+	leagueVersion = "";
+	
+	// Try the hint path if we have one
+	if (hintPath) {
+		leaguePath = hintPath;
+		checkPath(function(found) {
+			if (!found)
+				find(false, callback);
+			else
+				callback(true);
+		});
+	} else {
 		if (process.platform == "win32") {
 			// Try finding the key in all the registry locations
 			let possiblePaths = [];
@@ -91,10 +112,12 @@ module.exports = {
 						
 						if (c == num) {
 							for (let k = 0; k < possiblePaths.length; k++) {
+								if (leaguePath)
+									break;
+								
 								console.log("Checking possible LoL client @ " + possiblePaths[k]);
 								leaguePath = possiblePaths[k];
-								if (checkPath())
-									break;
+								checkPath(callback);
 							}
 						}
 					});
@@ -107,11 +130,24 @@ module.exports = {
 				} else {
 					leaguePath = "/Applications/League of Legends.app/Contents/LoL/RADS";
 					console.log("Possible LoL client @ " + leaguePath);
-					checkPath();
+					checkPath(callback);
 				}
 			});
-		}
+		}	
+	}
+}
+
+module.exports = {
+	leaguePath: function() {
+		return leaguePath;
 	},
+	isFound: function() {
+		return leaguePath !== false;
+	},
+	version : function() {
+		return leagueVersion;
+	},
+	find: find,
 	launch: function(host, port, replayRegionName, replayGameId, replayKey, callback) {
 		// Ask for LoL client path if we didn't find it
 		if (!leaguePath) {
@@ -162,20 +198,25 @@ module.exports = {
 		
 		return true;
 	},
-	extractPath: function(file) {
+	extractPath: function(file, callback) {
+		file = file.replace(/\\/g, "/");
 		leaguePath = false;
 		leagueVersion = "";
 		if (process.platform == "win32") {
 			let i = file.indexOf("RADS/solutions/") + 5;
-			if (i === 4)
-				i = file.indexOf("RADS\\solutions\\") + 5;
-			if (i === 4)
-				return;
-			leaguePath = file.substring(0, i);
+			if (i > 4) {
+				leaguePath = file.substring(0, i);
+			} else if ((i = file.indexOf("League of Legends/") + 18) > 17) {
+				leaguePath = file.substring(0, i) + "RADS";
+			}
 		} else if (process.platform == "darwin") {
 			leaguePath = file + "/Contents/LoL/RADS";
 		}
 		console.log("League path set to " + leaguePath);
-		checkPath();
+		
+		if (leaguePath)
+			checkPath(callback);
+		else
+			callback(false);
 	},
 };
