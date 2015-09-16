@@ -30,6 +30,10 @@ let staticData = {
 };
 
 
+// Create folder for log files
+fs.mkdirSync(app.getPath("userCache") + "/logs/");
+
+
 // Add loggers
 let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
 let logger = new winston.Logger({ transports: [] });
