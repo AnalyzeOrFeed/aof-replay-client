@@ -3,7 +3,7 @@
         <span id="md-toolbar-title">AnalyzeOrFeed Replay Client</span>
         <span flex></span>
         <span ng-show="aofClientInfo.newVersion" ng-click="showAofClientInfo($event)">Update available!</span>
-        <md-menu>
+        <md-menu ng-hide="loading">
             <md-button aria-label="Open demo menu" class="md-icon-button" ng-click="$mdOpenMenu($event)">
                 <md-icon>settings</md-icon>
             </md-button>

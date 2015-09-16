@@ -2,18 +2,18 @@ var app = angular.module('app.controllers', []);
 
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
-
+        
         var ipc = require('ipc');
-
-        $scope.hasReplay = false;
+        
+        $scope.loading = true;
+        $scope.msg = "Loading...";
         $scope.replay = null;
-        $scope.leagueClientFound = false;
-        $scope.leagueClientVersion = "";
-        $scope.staticDataReady = false;
+        $scope.lolClientFound = false;
+        $scope.lolClientVersion = "";
         $scope.aofClientInfo = {};
-
+        
         $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" } ];
-
+        
         $scope.showAofClientInfo = function(ev) {
             var updateText = "";
             if ($scope.aofClientInfo.newVersion) {
@@ -31,7 +31,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                     .targetEvent(ev)
             );
         };
-
+        
         $scope.announceClick = function(index) {
             if (index == 0) {
                 $scope.selectClient();
@@ -54,32 +54,32 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             ipc.send("play");
         };
         
+        ipc.on("loading", function(obj) {
+            $scope.$apply(function() {
+                $scope.loading = obj.loading
+                $scope.msg = obj.msg;
+            });
+        });
+        
+        ipc.on("aofUpdate", function(obj) {
+            $scope.$apply(function() {
+                $scope.aofClientInfo = obj;
+            });
+        });
+        
         ipc.on("clientInfo", function(obj) {
             $scope.$apply(function() {
-                $scope.leagueClientFound = obj.found;
-                $scope.leagueClientVersion = obj.version;
+                $scope.lolClientFound = obj.found;
+                $scope.lolClientVersion = obj.version;
             });
         });
-
-        ipc.on("parsedReplayFile", function(arg) {
+        
+        ipc.on("parsedReplayFile", function(obj) {
             $scope.$apply(function() {
-                $scope.replay = arg;
-                $scope.hasReplay = true;
+                $scope.replay = obj;
             });
         });
-
-        ipc.on("staticData", function(arg) {
-            $scope.$apply(function() {
-                $scope.staticDataReady = arg;
-            });
-        });
-
-        ipc.on("update", function(arg) {
-            $scope.$apply(function() {
-                $scope.aofClientInfo = arg;
-            });
-        });
-
+        
         ipc.send("ready");
     }
 ]);

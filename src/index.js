@@ -14,8 +14,8 @@ let lolClient = require(__dirname + "/modules/lol-client.js");
 
 let replay = null;
 let mainWindow = null;
+let settings = {};
 let staticData = {
-	checked: false,
 	extended: false,
 	regions: [
 		{"Id":5,"Name":"Brazil","ShortName":"BR"},
@@ -32,8 +32,10 @@ let staticData = {
 	]
 };
 
+
 // Log operating system
 console.log("We are running on " + process.platform);
+
 
 // Quit when all windows are closed.
 app.on("window-all-closed", function() {
@@ -42,53 +44,84 @@ app.on("window-all-closed", function() {
 	}
 });
 
-// Get static data from api
-fs.readFile(app.getPath("userCache") + "/.static", function(err, data) {
-	if (!err) {
-		console.log("Reading static data from local cache");
-		staticData = JSON.parse(data);
-		staticData.extended = true;
-	}
-	
-	console.log("Retrieving static data from server");
-	request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
-		if (!err && response && response.statusCode == 200 && !body.err && body.data) {
-			staticData = body.data;
-			staticData.extended = true;
-			fs.writeFileSync(app.getPath("userCache") + "/.static", JSON.stringify(staticData));
-		} else {
-			console.log("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+// User settings
+function loadUserSettings(callback) {
+	console.log("Loading user settings");
+	fs.readFile(app.getPath("userCache") + "/settings", function(err, data) {
+		if (!err) {
+			settings = JSON.parse(data);
 		}
 		
-		staticData.checked = true;
-		if (mainWindow)
-			mainWindow.webContents.send("staticData", true);
+		callback();
 	});
-});
+}
+function saveUserSettings() {
+	console.log("Saving user settings");
+	settings.lolClientPath = lolClient.leaguePath();
+	fs.writeFileSync(app.getPath("userCache") + "/settings", JSON.stringify(settings, null, 2));
+}
+
 
 // Check for updates
-console.log("Checking for updates");
-let version = { currVersion: JSON.parse(fs.readFileSync(__dirname + "/package.json")).version, newVersion: null, msg: null };
-request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
-	if (!err && response && response.statusCode == 200) {
-		if (version.currVersion != body.version) {
-			version.newVersion = body.version;
-			version.msg = body.msg;	
+function checkForUpdates(callback) {
+	console.log("Checking for application updates");
+	let version = { currVersion: JSON.parse(fs.readFileSync(__dirname + "/package.json")).version, newVersion: null, msg: null };
+	let timeout = setTimeout(function() {
+		req.abort();
+		console.log("Could not check for updates, request timed out");
+		callback();
+	}, 10000);
+	let req = request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
+		clearTimeout(timeout);
+		if (!err && response && response.statusCode == 200) {
+			// Set the new version info if there is one
+			if (version.currVersion != body.version) {
+				version.newVersion = body.version;
+				version.msg = body.msg;
+			}
+			mainWindow.webContents.send("aofUpdate", version);
+		} else {
+			console.log("Error while retrieving version: " + err + " " + JSON.stringify(response));
 		}
-		if (mainWindow)
-			mainWindow.webContents.send("update", version);
-	} else {
-		console.log("Error while retrieving version: " + err + " " + JSON.stringify(response));
-	}
-});
+		
+		callback();
+	});	
+}
 
-// Start our replay server
-replayServer.startServer();
 
-// Try and find the league client
-lolClient.find();
+// Get static data from api
+function getStaticData(callback) {
+	console.log("Loading static data");
+	fs.readFile(app.getPath("userCache") + "/static", function(err, data) {
+		if (!err) {
+			console.log("Reading static data from local cache");
+			staticData = JSON.parse(data);
+			staticData.extended = true;
+		}
+		
+		console.log("Retrieving static data from server");
+		let timeout = setTimeout(function() {
+			req.abort();
+			console.log("Could not retreive static data, request timed out");
+			callback();
+		}, 10000)
+		let req = request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
+			if (!err && response && response.statusCode == 200 && !body.err && body.data) {
+				staticData = body.data;
+				staticData.extended = true;
+				fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
+			} else {
+				console.log("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+			}
+			
+			callback();
+		});
+	});	
+}
 
-let extendReplayMetadata = function(meta) {
+
+// Extend the metadata of a replay with additional information
+function extendReplayMetadata(meta) {
 	meta.region = _.find(staticData.regions, function(region) { return region.Id == meta.regionId }).ShortName;
 	
 	if (staticData.extended) {
@@ -109,16 +142,39 @@ let extendReplayMetadata = function(meta) {
 		}
 	}
 	return meta;
-};
+}
 
-// Listen for renderer messages
+
+// Called when the renderer is ready to display things
 ipc.on("ready", function(event, args) {
-	if (staticData.checked)
-		event.sender.send("staticData", true);
-	if (version)
-		event.sender.send("update", version);
-	event.sender.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
+	
+	mainWindow.webContents.send("loading", { loading: true, msg: "Loading user settings..." });
+	loadUserSettings(function() {
+		
+		mainWindow.webContents.send("loading", { loading: true, msg: "Checking for updates..." });
+		checkForUpdates(function() {
+			
+			mainWindow.webContents.send("loading", { loading: true, msg: "Retreiving static data..." });
+			getStaticData(function() {
+				
+				mainWindow.webContents.send("loading", { loading: true, msg: "Searching for league client..." });
+				lolClient.find(settings.lolClientPath, function(found) {
+					
+					mainWindow.webContents.send("loading", { loading: true, msg: "Starting local replay server..." });
+					replayServer.startServer();
+					
+					mainWindow.webContents.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
+					mainWindow.webContents.send("loading", { loading: false, msg: "" });
+					
+					saveUserSettings();
+				});
+			});
+		});
+	});
 });
+
+
+// Called when the user wants to select the league client manually
 ipc.on("selectClient", function(event, args) {
 	var files = dialog.showOpenDialog({
 		filters: [{ name: 'League of Legends Client', extensions: ['app', 'exe'] }],
@@ -126,10 +182,15 @@ ipc.on("selectClient", function(event, args) {
 	});
 	
 	if (files && files.length == 1) {
-		lolClient.extractPath(files[0]);
-		event.sender.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
+		lolClient.extractPath(files[0], function() {
+			event.sender.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
+			saveUserSettings();
+		});
 	}
 });
+
+
+// Called when the user wants to open a replay
 ipc.on("openReplay", function(event, args) {
 	let files = dialog.showOpenDialog({
 		filters: [{ name: 'Replay File', extensions: ['aof'] }],
@@ -148,6 +209,9 @@ ipc.on("openReplay", function(event, args) {
 		});
 	}
 });
+
+
+// Called when the user wants to play a replay
 ipc.on("play", function(event, args) {
 	replayServer.resetReplay();
 	
@@ -161,6 +225,7 @@ ipc.on("play", function(event, args) {
 		console.log("Could not run league client");
 	}
 });
+
 
 // Setup windows
 app.on("ready", function() {

@@ -1,21 +1,21 @@
 <div layout="column" flex="100">
-    <div ng-hide="staticDataReady" layout="row" layout-sm="column" layout-align="space-around" style="margin-top:200px;">
-        <md-tooltip md-direction="top">
-            Loading static data from server...
-        </md-tooltip>
+    <div ng-show="loading" layout="row" layout-sm="column" layout-align="space-around" style="margin-top: 150px;">
         <md-progress-circular md-mode="indeterminate"></md-progress-circular>
     </div>
-    <md-content ng-show="staticDataReady" style="height: 493px" flex>
+    <div ng-show="loading" layout="row" layout-sm="column" layout-align="space-around">
+        {{ msg }}
+    </div>
+    <md-content ng-hide="loading" style="height: 493px" flex>
         <md-button class="md-icon-button" style="float:right;">
-            <md-icon id="clientFound" ng-class="leagueClientFound ? 'client-found-true' : 'client-found-false'">{{leagueClientFound ? 'check_circle' : 'error'}}</md-icon>
+            <md-icon id="clientFound" ng-class="lolClientFound ? 'client-found-true' : 'client-found-false'">{{ lolClientFound ? 'check_circle' : 'error' }}</md-icon>
             <md-tooltip md-direction="left">
-                {{leagueClientFound ? "LoL Client found: " : "No LoL Client found!"}} {{leagueClientVersion}}
+                {{ lolClientFound ? "LoL Client found: " : "No LoL Client found!" }} {{ lolClientVersion }}
             </md-tooltip>
         </md-button>
         <md-button class="aof md-raised md-primary md-button md-default-theme" style="top: 3px;" ng-click="openFile()">Open file...</md-button>
         <div class="content" ng-show="replay" style="padding: 10px;">
-            <div style="float:right;">v{{replay.riotVersion}}</div>
-            <div>Game ID: {{replay.gameId}} ({{replay.region}})
+            <div style="float:right;">v{{ replay.riotVersion }}</div>
+            <div>Game ID: {{ replay.gameId }} ({{ replay.region }})
                 <span ng-hide="replay.complete" style="color: red;">
                     INCOMPLETE
                     <md-tooltip md-direction="top">
@@ -32,7 +32,7 @@
                             <td width="15%">&nbsp;</td>
                         </thead>
                         <tr ng-repeat="player in replay.players | filter: { 'teamNr': 0 }">
-                            <td>{{player.summonerName}}</td>
+                            <td>{{ player.summonerName }}</td>
                             <td style="text-align: center;">
                                 <img style="float: left; margin-right: 2px; margin-left: 2px;" ng-src="http://api.aof.gg/static/champion/{{player.champion.image}}" width="48" height="48" />
                                 <div style="float: left;">
@@ -43,7 +43,7 @@
                             <td style="text-align: center;">
                                 <img style="margin-top: 5px;" ng-src="http://api.aof.gg/static/league/{{player.league.image}}" width="48" height="48" />
                                 <md-tooltip md-direction="right">
-                                    {{player.league.name}} {{player.leagueRank != 0 ? player.leagueRank : ""}}
+                                    {{ player.league.name }} {{ player.leagueRank != 0 ? player.leagueRank : "" }}
                                 </md-tooltip>
                             </td>
                         </tr>
@@ -60,7 +60,7 @@
                             <td style="text-align: center;">
                                 <img style="margin-top: 5px;" ng-src="http://api.aof.gg/static/league/{{player.league.image}}" width="48" height="48" />
                                 <md-tooltip md-direction="left">
-                                    {{player.league.name}} {{player.leagueRank != 0 ? player.leagueRank : ""}}
+                                    {{ player.league.name }} {{ player.leagueRank != 0 ? player.leagueRank : "" }}
                                 </md-tooltip>
                             </td>
                             <td style="text-align: center;">
@@ -69,12 +69,12 @@
                                     <div class="spell1"><img ng-src="http://api.aof.gg/static/spell/{{player.d.image}}" width="23" height="23"></div>
                                     <div class="spell2"><img ng-src="http://api.aof.gg/static/spell/{{player.f.image}}" width="23" height="23"></div>
                                 </div>
-                            <td style="text-align: right;">{{player.summonerName}}</td>
+                            <td style="text-align: right;">{{ player.summonerName }}</td>
                         </tr>
                     </table>
                 </div>
             </div>
         </div>
-        <md-button class="aof md-raised md-primary md-button md-default-theme" style="bottom: 3px;" disabled="true" ng-disabled="!hasReplay || !leagueClientFound" ng-click="playReplay()">Play replay</md-button>
+        <md-button class="aof md-raised md-primary md-button md-default-theme" style="bottom: 3px;" disabled="true" ng-disabled="replay == null || !lolClientFound" ng-click="playReplay()">Play replay</md-button>
     </md-content>
 </div>
