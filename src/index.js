@@ -116,12 +116,7 @@ function getStaticData(callback) {
 		}
 		
 		logger.info("Retrieving static data from server");
-		let timeout = setTimeout(function() {
-			req.abort();
-			logger.warn("Could not retreive static data, request timed out");
-			callback();
-		}, 10000)
-		let req = request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
+		request({ url: "http://api.aof.gg/static", json: true ,timeout: 10000}, function(err, response, body) {
 			if (!err && response && response.statusCode == 200 && !body.err && body.data) {
 				staticData = body.data;
 				staticData.extended = true;
