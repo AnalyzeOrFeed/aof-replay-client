@@ -159,7 +159,7 @@ module.exports = function(extLogger) {
 		find: find,
 		launch: function(host, port, replayRegionName, replayGameId, replayKey, callback) {
 			// Ask for LoL client path if we didn't find it
-			if (!leaguePath) {
+			if (!fullPath) {
 				callback(false);
 				return;
 			}
@@ -178,16 +178,16 @@ module.exports = function(extLogger) {
 			// Set options
 			let opts = { stdio: "ignore" };
 			if (process.platform == "win32") {
-				opts.cwd = leaguePath;
+				opts.cwd = fullPath;
 			} else if (process.platform == "darwin") {
-				opts.cwd = leaguePath + exe + "/Contents/MacOS";
+				opts.cwd = fullPath + exe + "/Contents/MacOS";
 				process.env["riot_launched"] = true;
 			}
 			
 			// Set command
 			let cmd = "";
 			if (process.platform == "win32") {
-				cmd = leaguePath + exe;
+				cmd = fullPath + exe;
 			} else if (process.platform == "darwin") {
 				cmd = opts.cwd + "/LeagueofLegends";
 			}
