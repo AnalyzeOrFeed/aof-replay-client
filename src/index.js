@@ -7,10 +7,7 @@ let dialog = require("dialog");
 let BrowserWindow = require("browser-window");
 let _  = require("underscore");
 let fs = require("fs");
-
-let aofParser = require(__dirname + "/modules/aof-parser.js");
-let replayServer = require(__dirname + "/modules/replay-server.js");
-let lolClient = require(__dirname + "/modules/lol-client.js");
+let winston = require("winston");
 
 let replay = null;
 let mainWindow = null;
@@ -33,8 +30,27 @@ let staticData = {
 };
 
 
+// Add loggers
+let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
+let logger = new winston.Logger({ transports: [] });
+logger.add(winston.transports.Console, {
+	"level": "info"
+});
+logger.add(winston.transports.File, {
+	"filename": logFile,
+	"level": "debug"
+});
+
+
 // Log operating system
-console.log("We are running on " + process.platform);
+logger.info("We are running on " + process.platform);
+logger.info("Application data path: " + app.getPath("userCache"));
+
+
+// Load our modules
+let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
+let replayServer = require(__dirname + "/modules/replay-server.js")(logger);
+let lolClient = require(__dirname + "/modules/lol-client.js")(logger);
 
 
 // Quit when all windows are closed.
@@ -46,7 +62,7 @@ app.on("window-all-closed", function() {
 
 // User settings
 function loadUserSettings(callback) {
-	console.log("Loading user settings");
+	logger.info("Loading user settings");
 	fs.readFile(app.getPath("userCache") + "/settings", function(err, data) {
 		if (!err) {
 			settings = JSON.parse(data);
@@ -56,7 +72,7 @@ function loadUserSettings(callback) {
 	});
 }
 function saveUserSettings() {
-	console.log("Saving user settings");
+	logger.info("Saving user settings");
 	settings.lolClientPath = lolClient.leaguePath();
 	fs.writeFileSync(app.getPath("userCache") + "/settings", JSON.stringify(settings, null, 2));
 }
@@ -64,13 +80,13 @@ function saveUserSettings() {
 
 // Check for updates
 function checkForUpdates(callback) {
-	console.log("Checking for application updates");
+	logger.info("Checking for application updates");
 	let version = { currVersion: JSON.parse(fs.readFileSync(__dirname + "/package.json")).version, newVersion: null, msg: null };
 	let timeout = setTimeout(function() {
 		req.abort();
-		console.log("Could not check for updates, request timed out");
+		logger.warn("Could not check for updates, request timed out");
 		callback();
-	}, 10000);
+	}, 5000);
 	let req = request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
 		clearTimeout(timeout);
 		if (!err && response && response.statusCode == 200) {
@@ -81,7 +97,7 @@ function checkForUpdates(callback) {
 			}
 			mainWindow.webContents.send("aofUpdate", version);
 		} else {
-			console.log("Error while retrieving version: " + err + " " + JSON.stringify(response));
+			logger.warn("Error while retrieving version: " + err + " " + JSON.stringify(response));
 		}
 		
 		callback();
@@ -91,18 +107,18 @@ function checkForUpdates(callback) {
 
 // Get static data from api
 function getStaticData(callback) {
-	console.log("Loading static data");
+	logger.info("Loading static data");
 	fs.readFile(app.getPath("userCache") + "/static", function(err, data) {
 		if (!err) {
-			console.log("Reading static data from local cache");
+			logger.info("Reading static data from local cache");
 			staticData = JSON.parse(data);
 			staticData.extended = true;
 		}
 		
-		console.log("Retrieving static data from server");
+		logger.info("Retrieving static data from server");
 		let timeout = setTimeout(function() {
 			req.abort();
-			console.log("Could not retreive static data, request timed out");
+			logger.warn("Could not retreive static data, request timed out");
 			callback();
 		}, 10000)
 		let req = request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
@@ -111,7 +127,7 @@ function getStaticData(callback) {
 				staticData.extended = true;
 				fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
 			} else {
-				console.log("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+				logger.warn("Error while retrieving static data: " + err + " " + JSON.stringify(response));
 			}
 			
 			callback();
@@ -200,7 +216,7 @@ ipc.on("openReplay", function(event, args) {
 	if (files && files.length == 1) {
 		aofParser.parse(files[0], function(err, replayMetadata, replayData) {
 			if (err) {
-				console.log(err);
+				logger.warn("Could not parse replay file " + files[0] + ": " + err);
 			} else {
 				replay = extendReplayMetadata(replayMetadata);
 				event.sender.send("parsedReplayFile", replay);
@@ -215,15 +231,17 @@ ipc.on("openReplay", function(event, args) {
 ipc.on("play", function(event, args) {
 	replayServer.resetReplay();
 	
-	let run = lolClient.launch(replayServer.host(), replayServer.port(), staticData.regions[replay.regionId].ShortName, replay.gameId, replay.key, function() {
-		mainWindow.restore();
-	});
+	mainWindow.minimize();
 	
-	if (run) {
-		mainWindow.minimize();
-	} else {
-		console.log("Could not run league client");
-	}
+	lolClient.launch(replayServer.host(), replayServer.port(), staticData.regions[replay.regionId].ShortName, 
+			replay.gameId, replay.key, function(success) {
+		mainWindow.restore();
+		
+		if (!success)
+			event.sender.send("error", { 
+				title: "LoL Client error",
+				content: "Could not start the League of Legends client<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
+	});
 });
 
 
