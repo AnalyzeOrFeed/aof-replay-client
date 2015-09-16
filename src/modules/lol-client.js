@@ -14,13 +14,13 @@ let regexLocations = [{
 		"\\Software\\Riot Games\\RADS",
 		"\\Software\\Wow6432Node\\Riot Games\\RADS",
 		"\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Wow6432Node\\RIOT GAMES\\RADS",
-		"\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\RIOT GAMES\\RADS",
+		"\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\RIOT GAMES\\RADS"
 	]
 },{
 	hive: winreg.HKLM,
 	keys: [
 		"\\Software\\Wow6432Node\\Riot Games\\RADS",
-		"\\Software\\RIOT GAMES\\RADS",
+		"\\Software\\RIOT GAMES\\RADS"
 	]
 }];
 
