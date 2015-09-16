@@ -111,14 +111,18 @@ function find(hintPath, callback) {
 						c++;
 						
 						if (c == num) {
-							for (let k = 0; k < possiblePaths.length; k++) {
-								if (leaguePath)
-									break;
-								
-								console.log("Checking possible LoL client @ " + possiblePaths[k]);
-								leaguePath = possiblePaths[k];
-								checkPath(callback);
-							}
+							if (possiblePaths.length == 0) {
+								callback(false);
+							} else {
+								for (let k = 0; k < possiblePaths.length; k++) {
+									if (leaguePath)
+										break;
+									
+									console.log("Checking possible LoL client @ " + possiblePaths[k]);
+									leaguePath = possiblePaths[k];
+									checkPath(callback);
+								}
+							}	
 						}
 					});
 				}

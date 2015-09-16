@@ -66,7 +66,13 @@ function saveUserSettings() {
 function checkForUpdates(callback) {
 	console.log("Checking for application updates");
 	let version = { currVersion: JSON.parse(fs.readFileSync(__dirname + "/package.json")).version, newVersion: null, msg: null };
-	request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
+	let timeout = setTimeout(function() {
+		req.abort();
+		console.log("Could not check for updates, request timed out");
+		callback();
+	}, 10000);
+	let req = request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
+		clearTimeout(timeout);
 		if (!err && response && response.statusCode == 200) {
 			// Set the new version info if there is one
 			if (version.currVersion != body.version) {
@@ -94,7 +100,12 @@ function getStaticData(callback) {
 		}
 		
 		console.log("Retrieving static data from server");
-		request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
+		let timeout = setTimeout(function() {
+			req.abort();
+			console.log("Could not retreive static data, request timed out");
+			callback();
+		}, 10000)
+		let req = request({ url: "http://api.aof.gg/static", json: true }, function(err, response, body) {
 			if (!err && response && response.statusCode == 200 && !body.err && body.data) {
 				staticData = body.data;
 				staticData.extended = true;
