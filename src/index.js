@@ -29,10 +29,10 @@ let staticData = {
 	]
 };
 
-
 // Create folder for log files
-fs.mkdirSync(app.getPath("userCache") + "/logs/");
-
+if (!fs.existsSync(app.getPath("userCache") + "/logs/")){
+	fs.mkdirSync(app.getPath("userCache") + "/logs/");
+}
 
 // Add loggers
 let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
@@ -49,10 +49,10 @@ logger.add(winston.transports.File, {
 // Add global error handlers
 process.on("uncaughtException", function (error) {
 	logger.error("App Uncaught exception: " + error);
-}
+});
 process.on("error", function (error) {
 	logger.error("App Error: " + error);
-}
+});
 
 
 // Log operating system
