@@ -50,7 +50,6 @@ logger.add(winston.transports.File, {
 logger.info("We are running on " + process.platform);
 logger.info("Application data path: " + app.getPath("userCache"));
 
-
 // Load our modules
 let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
 let replayServer = require(__dirname + "/modules/replay-server.js")(logger);
@@ -239,10 +238,46 @@ ipc.on("play", function(event, args) {
 		if (!success)
 			event.sender.send("error", { 
 				title: "LoL Client error",
-				content: "Could not start the League of Legends client<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
+				content: "Could not start the League of Legends client<br>Please send us your current log file so we can reproduce what happened. (You can send the report in the top right)."});
 	});
 });
 
+
+ipc.on("sendLogs", function(event, args) {
+	console.log("sending report");
+	let report = {
+		date: new Date(),
+		platform: process.platform,
+		arch: process.arch,
+		aofClient: JSON.parse(fs.readFileSync(__dirname + "/package.json")).version,
+		leagueClient: {
+			path: lolClient.leaguePath(),
+			version: lolClient.version()
+		},
+		logs: fs.readFileSync(logFile, 'utf8')
+	};
+
+	console.log(JSON.stringify(report));
+
+	request({
+		url: "http://api.aof.gg/client/reports",
+		method: "POST",
+		json: true,
+		headers: {
+			"content-type": "application/json"
+		},
+		body: report
+	}, function(err,httpResponse,body){
+		if (httpResponse.statusCode != 200) {
+			event.sender.send("error", {
+				title: "Error sending report",
+				content: "Could not send error report.<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
+		} else {
+
+		}
+
+	});
+});
 
 // Setup windows
 app.on("ready", function() {

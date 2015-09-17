@@ -12,7 +12,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         $scope.lolClientVersion = "";
         $scope.aofClientInfo = {};
         
-        $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" } ];
+        $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" }, { id: 3, name: "Send current log to aof.gg" } ];
         
         $scope.showAofClientInfo = function(event) {
             var updateText = "";
@@ -33,7 +33,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                     .ok('ok')
                     .targetEvent(event)
             );   
-        }
+        };
         
         $scope.announceClick = function(index) {
             if (index == 0) {
@@ -42,6 +42,13 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             if (index == 1) {
                 $scope.showAofClientInfo();
             }
+            if (index == 2) {
+                $scope.sendLogs();
+            }
+        };
+
+        $scope.sendLogs = function() {
+            ipc.send("sendLogs");
         };
         
         $scope.openFile = function() {
@@ -84,7 +91,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         });
         
         ipc.on("error", function(obj) {
-           $scope.showDialog(obj.title, obj.content); 
+            $scope.showDialog(obj.title, obj.content);
         });
         
         ipc.send("ready");
