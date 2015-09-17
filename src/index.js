@@ -46,9 +46,19 @@ logger.add(winston.transports.File, {
 });
 
 
+// Add global error handlers
+process.on("uncaughtException", function (error) {
+	logger.error("App Uncaught exception: " + error);
+}
+process.on("error", function (error) {
+	logger.error("App Error: " + error);
+}
+
+
 // Log operating system
 logger.info("We are running on " + process.platform);
 logger.info("Application data path: " + app.getPath("userCache"));
+
 
 // Load our modules
 let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
@@ -62,6 +72,7 @@ app.on("window-all-closed", function() {
 		app.quit();
 	}
 });
+
 
 // User settings
 function loadUserSettings(callback) {
@@ -278,6 +289,7 @@ ipc.on("sendLogs", function(event, args) {
 
 	});
 });
+
 
 // Setup windows
 app.on("ready", function() {
