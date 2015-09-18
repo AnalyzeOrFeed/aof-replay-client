@@ -4,14 +4,26 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
         
         var ipc = require('ipc');
-        
+
+        var matchClientVersionToReplayVersion = function() {
+            if ($scope.lolClientVersion && $scope.replay && $scope.replay.riotVersion) {
+                var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
+                var replay = $scope.replay.riotVersion.split('.');
+                if (regex.length == 3) {
+                    $scope.replayVersionMatch = (regex[1] == replay[0] && regex[2] == replay[1] );
+                }
+            }
+        };
+
         $scope.loading = true;
         $scope.msg = "Loading...";
         $scope.replay = null;
         $scope.lolClientFound = false;
         $scope.lolClientVersion = "";
+        $scope.lolClientVersionShort = "";
         $scope.aofClientInfo = {};
-        
+        $scope.replayVersionMatch = true;
+
         $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" }, { id: 3, name: "Send current log to aof.gg" } ];
         
         $scope.showAofClientInfo = function(event) {
@@ -66,7 +78,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         
         ipc.on("loading", function(obj) {
             $scope.$apply(function() {
-                $scope.loading = obj.loading
+                $scope.loading = obj.loading;
                 $scope.msg = obj.msg;
             });
         });
@@ -81,12 +93,18 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             $scope.$apply(function() {
                 $scope.lolClientFound = obj.found;
                 $scope.lolClientVersion = obj.version;
+                var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
+                if (regex.length == 3) {
+                    $scope.lolClientVersionShort = regex[1] + "." + regex[2];
+                }
+                matchClientVersionToReplayVersion();
             });
         });
         
         ipc.on("parsedReplayFile", function(obj) {
             $scope.$apply(function() {
                 $scope.replay = obj;
+                matchClientVersionToReplayVersion();
             });
         });
         
