@@ -7,9 +7,9 @@
     </div>
     <md-content ng-hide="loading" style="height: 493px" flex>
         <md-button class="md-icon-button" style="float:right;">
-            <md-icon id="clientFound" ng-class="lolClientFound ? 'client-found-true' : 'client-found-false'">{{ lolClientFound ? 'check_circle' : 'error' }}</md-icon>
+            <md-icon id="clientFound" ng-class="lolClientFound ? replayVersionMatch ? 'client-found-true' : 'client-found-warning' : 'client-found-false'">{{ lolClientFound ? replayVersionMatch ? 'check_circle' : 'warning' : 'error' }}</md-icon>
             <md-tooltip md-direction="left">
-                {{ lolClientFound ? "LoL Client found: " : "No LoL Client found!" }} {{ lolClientVersion }}
+                {{ lolClientFound ? replayVersionMatch ? "LoL Client found: " : "Replay version does not match LoL version. You may not be able to play this replay. LoL Client: " : "No LoL Client found!" }} {{ lolClientVersionShort }}
             </md-tooltip>
         </md-button>
         <md-button class="aof md-raised md-primary md-button md-default-theme" style="top: 3px;" ng-click="openFile()">Open file...</md-button>

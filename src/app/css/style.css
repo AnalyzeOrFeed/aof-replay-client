@@ -28,6 +28,10 @@ body {
     color: green;
 }
 
+.client-found-warning {
+    color: orange;
+}
+
 .client-found-false {
     color: red;
 }
