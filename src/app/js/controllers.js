@@ -44,9 +44,28 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                     .ariaLabel(title)
                     .ok('ok')
                     .targetEvent(event)
-            );   
+            );
         };
-        
+
+        $scope.showSendLogs = function() {
+            $mdDialog.show({
+                    templateUrl: 'app/tpl/dialog-sendlogs.html',
+                    controller: DialogController
+                })
+                .then(function(comment) {
+                    $scope.sendLogs(comment);
+                });
+
+            function DialogController($scope, $mdDialog) {
+                $scope.send = function(comment) {
+                    $mdDialog.hide(comment);
+                };
+                $scope.cancel = function() {
+                    $mdDialog.cancel();
+                };
+            }
+        };
+
         $scope.announceClick = function(index) {
             if (index == 0) {
                 $scope.selectClient();
@@ -55,12 +74,12 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 $scope.showAofClientInfo();
             }
             if (index == 2) {
-                $scope.sendLogs();
+                $scope.showSendLogs();
             }
         };
 
-        $scope.sendLogs = function() {
-            ipc.send("sendLogs");
+        $scope.sendLogs = function(comment) {
+            ipc.send("sendLogs", comment);
         };
         
         $scope.openFile = function() {
