@@ -160,6 +160,7 @@ module.exports = function(extLogger) {
 		launch: function(host, port, replayRegionName, replayGameId, replayKey, callback) {
 			// Ask for LoL client path if we didn't find it
 			if (!fullPath) {
+				logger.error("fullPath not set");
 				callback(false);
 				return;
 			}
@@ -195,8 +196,7 @@ module.exports = function(extLogger) {
 			// Run LoL client
 			let client = spawn(cmd, args, opts);
 			client.on("error", function (err) {
-				logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!");
-				logger.error(err);
+				logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!", {err: err});
 				callback(false);
 			});
 			client.on("close", function (code) {

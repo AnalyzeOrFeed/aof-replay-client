@@ -91,7 +91,6 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         };
         
         $scope.playReplay = function() {
-            console.log("playing");
             ipc.send("play");
         };
         

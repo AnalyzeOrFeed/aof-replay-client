@@ -38,7 +38,7 @@ if (!fs.existsSync(app.getPath("userCache") + "/logs/")){
 let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
 let logger = new winston.Logger({ transports: [] });
 logger.add(winston.transports.Console, {
-	"level": "info"
+	"level": "debug"
 });
 logger.add(winston.transports.File, {
 	"filename": logFile,
@@ -201,6 +201,8 @@ ipc.on("ready", function(event, args) {
 
 // Called when the user wants to select the league client manually
 ipc.on("selectClient", function(event, args) {
+	logger.info("ipc: Select client");
+
 	var files = dialog.showOpenDialog({
 		filters: [{ name: 'League of Legends Client', extensions: ['app', 'exe'] }],
 		properties: [ "openFile" ]
@@ -217,6 +219,8 @@ ipc.on("selectClient", function(event, args) {
 
 // Called when the user wants to open a replay
 ipc.on("openReplay", function(event, args) {
+	logger.info("ipc: Open replay");
+
 	let files = dialog.showOpenDialog({
 		filters: [{ name: 'Replay File', extensions: ['aof'] }],
 		properties: [ "openFile" ]
@@ -238,6 +242,7 @@ ipc.on("openReplay", function(event, args) {
 
 // Called when the user wants to play a replay
 ipc.on("play", function(event, args) {
+	logger.info("ipc: Play replay");
 	replayServer.resetReplay();
 	
 	mainWindow.minimize();
@@ -255,7 +260,8 @@ ipc.on("play", function(event, args) {
 
 
 ipc.on("sendLogs", function(event, comment) {
-	console.log("sending report");
+	logger.info("ipc: Send logs");
+
 	let report = {
 		date: new Date(),
 		platform: process.platform,
@@ -269,8 +275,6 @@ ipc.on("sendLogs", function(event, comment) {
 		logs: fs.readFileSync(logFile, 'utf8')
 	};
 
-	console.log(JSON.stringify(report));
-
 	request({
 		url: "http://api.aof.gg/client/reports",
 		method: "POST",
@@ -279,15 +283,13 @@ ipc.on("sendLogs", function(event, comment) {
 			"content-type": "application/json"
 		},
 		body: report
-	}, function(err,httpResponse,body){
+	}, function(err, httpResponse, body){
 		if (httpResponse.statusCode != 200) {
+			logger.error("Sending replays failed.", {err: err, httpResponse: httpResponse, body: body});
 			event.sender.send("error", {
 				title: "Error sending report",
 				content: "Could not send error report.<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
-		} else {
-
 		}
-
 	});
 });
 
