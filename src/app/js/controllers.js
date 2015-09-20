@@ -112,7 +112,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 $scope.lolClientFound = obj.found;
                 $scope.lolClientVersion = obj.version;
                 var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
-                if (regex.length == 3) {
+                if (regex && regex.length == 3) {
                     $scope.lolClientVersionShort = regex[1] + "." + regex[2];
                 }
                 matchClientVersionToReplayVersion();
