@@ -28,14 +28,14 @@ let regexLocations = [{
 // Try and find the league of legends client
 function checkPath(callback) {
 	let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
-	
+
 	var errorCallback = function(err) {
 		logger.warn("Error checking path " + logPath + ": " + err);
 		leaguePath = false;
 		leagueVersion = "";
 		callback(false);
 	};
-	
+
 	fs.readdir(logPath, function(err, files) {
 		if (err) {
 			errorCallback(err);
@@ -43,21 +43,21 @@ function checkPath(callback) {
 			files.sort(function(a, b) {
 				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
 			});
-			
+
 			fs.readFile(logPath + files[0], "utf8", function(err, content) {
 				if (err) {
 					errorCallback(err);
 				} else {
 					leagueVersion = content.substring(content.indexOf("Build Version:") + 15, content.indexOf("[PUBLIC]") - 1);
 					logger.info("LoL client version is: " + leagueVersion);
-					
+
 					fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
 						if (err) {
 							errorCallback(err);
 						} else {
 							fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
 							logger.info("Complete league path is " + fullPath);
-							
+
 							callback(true);
 						}
 					});
@@ -87,9 +87,9 @@ function findRegKey(hive, key, callback) {
 function find(hintPath, callback) {
 	leaguePath = false;
 	leagueVersion = "";
-	
+
 	logger.info("Searching for the League of Legends client");
-	
+
 	// Try the hint path if we have one
 	if (hintPath) {
 		leaguePath = hintPath;
@@ -112,7 +112,7 @@ function find(hintPath, callback) {
 							possiblePaths.push(path);
 						}
 						c++;
-						
+
 						if (c == num) {
 							if (possiblePaths.length == 0) {
 								callback(false);
@@ -120,12 +120,12 @@ function find(hintPath, callback) {
 								for (let k = 0; k < possiblePaths.length; k++) {
 									if (leaguePath)
 										break;
-									
+
 									logger.info("Checking possible LoL client @ " + possiblePaths[k]);
 									leaguePath = possiblePaths[k];
 									checkPath(callback);
 								}
-							}	
+							}
 						}
 					});
 				}
@@ -140,7 +140,7 @@ function find(hintPath, callback) {
 					checkPath(callback);
 				}
 			});
-		}	
+		}
 	}
 }
 
@@ -164,7 +164,7 @@ module.exports = function(extLogger) {
 				callback(false);
 				return;
 			}
-			
+
 			// Set LoL client executable/app name
 			let exe = "";
 			if (process.platform == "win32") {
@@ -172,10 +172,10 @@ module.exports = function(extLogger) {
 			} else if (process.platform == "darwin") {
 				exe = "LeagueOfLegends.app";
 			}
-			
+
 			// Set arguments
 			let args = ["8394", "LoLLauncher.exe", "", "spectator " + host + ":" + port + " " + replayKey + " " + replayGameId + " " + replayRegionName];
-			
+
 			// Set options
 			let opts = { stdio: "ignore" };
 			if (process.platform == "win32") {
@@ -184,7 +184,7 @@ module.exports = function(extLogger) {
 				opts.cwd = fullPath + exe + "/Contents/MacOS";
 				process.env["riot_launched"] = true;
 			}
-			
+
 			// Set command
 			let cmd = "";
 			if (process.platform == "win32") {
@@ -192,15 +192,22 @@ module.exports = function(extLogger) {
 			} else if (process.platform == "darwin") {
 				cmd = opts.cwd + "/LeagueofLegends";
 			}
-			
-			// Run LoL client
-			let client = spawn(cmd, args, opts);
-			client.on("error", function (err) {
-				logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!", {err: err});
-				callback(false);
-			});
-			client.on("close", function (code) {
-				callback(true);
+
+			// Check if client is executable
+			fs.access(cmd, fs.X_OK, function (err) {
+  			if (err) {
+					callback(false);
+				} else {
+					// Run LoL client
+					let client = spawn(cmd, args, opts);
+					client.on("error", function (err) {
+						logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!", {err: err});
+						callback(false);
+					});
+					client.on("close", function (code) {
+						callback(true);
+					});
+				}
 			});
 		},
 		extractPath: function(file, callback) {
@@ -218,7 +225,7 @@ module.exports = function(extLogger) {
 				leaguePath = file + "/Contents/LoL/RADS";
 			}
 			logger.info("League path set to " + leaguePath);
-			
+
 			if (leaguePath)
 				checkPath(callback);
 			else
