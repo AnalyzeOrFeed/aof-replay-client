@@ -259,7 +259,7 @@ ipc.on("play", function(event, args) {
 });
 
 
-ipc.on("sendLogs", function(event, comment) {
+ipc.on("sendLogs", function(event, data) {
 	logger.info("ipc: Send logs");
 
 	let report = {
@@ -271,7 +271,8 @@ ipc.on("sendLogs", function(event, comment) {
 			path: lolClient.leaguePath(),
 			version: lolClient.version()
 		},
-		comment: comment,
+		email: data.email,
+		comment: data.comment,
 		logs: fs.readFileSync(logFile, 'utf8')
 	};
 

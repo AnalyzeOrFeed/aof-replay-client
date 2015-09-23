@@ -52,13 +52,13 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                     templateUrl: 'app/tpl/dialog-sendlogs.html',
                     controller: DialogController
                 })
-                .then(function(comment) {
-                    $scope.sendLogs(comment);
+                .then(function(data) {
+                    $scope.sendLogs(data);
                 });
 
             function DialogController($scope, $mdDialog) {
-                $scope.send = function(comment) {
-                    $mdDialog.hide(comment);
+                $scope.send = function(email, comment) {
+                    $mdDialog.hide({email: email, comment: comment});
                 };
                 $scope.cancel = function() {
                     $mdDialog.cancel();
@@ -78,8 +78,8 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             }
         };
 
-        $scope.sendLogs = function(comment) {
-            ipc.send("sendLogs", comment);
+        $scope.sendLogs = function(data) {
+            ipc.send("sendLogs", data);
         };
         
         $scope.openFile = function() {
