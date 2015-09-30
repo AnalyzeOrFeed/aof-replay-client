@@ -53,7 +53,9 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                     controller: DialogController
                 })
                 .then(function(data) {
-                    $scope.sendLogs(data);
+                    if (data) {
+                      $scope.sendLogs(data);
+                    };
                 });
 
             function DialogController($scope, $mdDialog) {
@@ -63,6 +65,9 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 $scope.cancel = function() {
                     $mdDialog.cancel();
                 };
+                $scope.hide = function() {
+                    $mdDialog.hide();
+                }
             }
         };
 
