@@ -26,13 +26,12 @@ let regexLocations = [{
 }];
 
 // Try and find the league of legends client
-function checkPath(callback) {
+function checkVersion(callback) {
 	let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
 
 	var errorCallback = function(err) {
-		logger.warn("Error checking path " + logPath + ": " + err);
-		leaguePath = false;
-		leagueVersion = "";
+		logger.warn("Error checking version " + logPath + ": " + err);
+		leagueVersion = "unknown";
 		callback(false);
 	};
 
@@ -50,16 +49,39 @@ function checkPath(callback) {
 				} else {
 					leagueVersion = content.substring(content.indexOf("Build Version:") + 15, content.indexOf("[PUBLIC]") - 1);
 					logger.info("LoL client version is: " + leagueVersion);
+					callback(true);
+				}
+			});
+		}
+	});
+};
 
-					fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
-						if (err) {
-							errorCallback(err);
-						} else {
-							fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
-							logger.info("Complete league path is " + fullPath);
+// Try and find the league of legends client
+function checkPath(callback) {
 
-							callback(true);
-						}
+	var errorCallback = function(err) {
+		logger.warn("Error checking path " + logPath + ": " + err);
+		leaguePath = false;
+		leagueVersion = "";
+		callback(false);
+	};
+
+	fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
+		if (err) {
+			errorCallback(err);
+		} else {
+			files.sort(function(a, b) {
+				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
+			});
+			fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
+
+			fs.readdir(fullPath, function(err, files) {
+				if (err) {
+					errorCallback(err);
+				} else {
+					logger.info("Complete league path is " + fullPath);
+					checkVersion(function(){
+						callback(true);
 					});
 				}
 			});
@@ -196,6 +218,7 @@ module.exports = function(extLogger) {
 			// Check if client is executable
 			fs.access(cmd, fs.X_OK, function (err) {
   			if (err) {
+					logger.error("No permissions to execute the league of legends client.", {err: err});
 					callback(false);
 				} else {
 					// Run LoL client
