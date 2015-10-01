@@ -1,4 +1,4 @@
-var app = angular.module('app.controllers', []);
+var app = angular.module('app.controllers', ['ngSanitize']);
 
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
@@ -35,16 +35,23 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             $scope.showDialog("Client info", 'v' + $scope.aofClientInfo.currVersion + updateText, event);
         };
         $scope.showDialog = function(title, content, event) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element(document.querySelector('#popupContainer')))
-                    .clickOutsideToClose(true)
-                    .title(title)
-                    .content(content)
-                    .ariaLabel(title)
-                    .ok('ok')
-                    .targetEvent(event)
-            );
+            $mdDialog.show({
+                    templateUrl: 'app/tpl/dialog-alert.html',
+                    controller: AlertController
+                });
+
+                $myScope = $scope;
+            function AlertController($scope, $mdDialog) {
+              $scope.title = title;
+              $scope.message = content;
+              $scope.openLogs = function() {
+                  $mdDialog.cancel();
+                  $myScope.showSendLogs();
+              };
+              $scope.cancel = function() {
+                  $mdDialog.cancel();
+              };
+            }
         };
 
         $scope.showSendLogs = function() {

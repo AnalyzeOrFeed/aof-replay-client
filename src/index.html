@@ -5,13 +5,14 @@
       <link rel="stylesheet" type="text/css" href="app/lib/angular-material/angular-material.css">
       <link rel="stylesheet" type="text/css" href="app/lib/material-design-icons-iconfont/dist/material-design-icons.css">
       <link rel="stylesheet" type="text/css" href="app/css/style.css">
-      
+
 	  <script type="text/javascript" src="app/lib/angular/angular.js"></script>
 	  <script type="text/javascript" src="app/lib/angular-animate/angular-animate.js"></script>
 	  <script type="text/javascript" src="app/lib/angular-aria/angular-aria.js"></script>
 	  <script type="text/javascript" src="app/lib/angular-material/angular-material.js"></script>
-	  <script type="text/javascript" src="app/lib/angular-route/angular-route.js"></script>
-	  
+    <script type="text/javascript" src="app/lib/angular-route/angular-route.js"></script>
+    <script type="text/javascript" src="app/lib/angular-sanitize/angular-sanitize.js"></script>
+
 	  <script type="text/javascript" src="app/js/app.js"></script>
 	  <script type="text/javascript" src="app/js/routes.js"></script>
 	  <script type="text/javascript" src="app/js/controllers.js"></script>
@@ -20,7 +21,7 @@
   </head>
   <body ng-cloak ng-controller="MainController">
 	  <div ng-include="'app/tpl/header.html'"></div>
-	  
+
 	  <div layout="column" id="content" flex>
 		  <ng-view layout="column" class="md-paddding" flex></ng-view>
 	  </div>
