@@ -25,7 +25,7 @@ let regexLocations = [{
 	]
 }];
 
-// Try and find the league of legends client
+// Try and extract the league of legends client version
 function checkVersion(callback) {
 	let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
 
