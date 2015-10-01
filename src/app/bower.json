@@ -11,6 +11,7 @@
     "angular": "*",
     "angular-material": "*",
     "angular-route": "*",
+    "angular-sanitize": "*",
     "material-design-icons-iconfont": "*"
   }
 }
