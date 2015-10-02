@@ -186,7 +186,7 @@ module.exports = function(extLogger) {
 				callback(false);
 				return;
 			}
-
+			
 			// Set LoL client executable/app name
 			let exe = "";
 			if (process.platform == "win32") {
@@ -194,10 +194,10 @@ module.exports = function(extLogger) {
 			} else if (process.platform == "darwin") {
 				exe = "LeagueOfLegends.app";
 			}
-
+			
 			// Set arguments
 			let args = ["8394", "LoLLauncher.exe", "", "spectator " + host + ":" + port + " " + replayKey + " " + replayGameId + " " + replayRegionName];
-
+			
 			// Set options
 			let opts = { stdio: "ignore" };
 			if (process.platform == "win32") {
@@ -206,7 +206,7 @@ module.exports = function(extLogger) {
 				opts.cwd = fullPath + exe + "/Contents/MacOS";
 				process.env["riot_launched"] = true;
 			}
-
+			
 			// Set command
 			let cmd = "";
 			if (process.platform == "win32") {
@@ -214,7 +214,7 @@ module.exports = function(extLogger) {
 			} else if (process.platform == "darwin") {
 				cmd = opts.cwd + "/LeagueofLegends";
 			}
-
+			
 			// Check if client is executable
 			fs.access(cmd, fs.X_OK, function (err) {
   			if (err) {

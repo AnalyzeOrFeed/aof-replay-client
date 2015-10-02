@@ -250,12 +250,13 @@ ipc.on("play", function(event, args) {
 	lolClient.launch(replayServer.host(), replayServer.port(), replay.region, replay.gameId, replay.key, function(success) {
 		mainWindow.restore();
 		
-		if (!success)
+		if (!success) {
 			logger.error("Could not start league of legends client.");
 			event.sender.send("error", {
 				title: "LoL Client error",
 				content: 'Could not start the League of Legends client<br />Please send us your current log file by clicking the button below and filling out the form.'
 			});
+		}
 	});
 });
 
