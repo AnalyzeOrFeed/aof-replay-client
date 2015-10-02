@@ -81,7 +81,7 @@ function loadUserSettings(callback) {
 		if (!err) {
 			settings = JSON.parse(data);
 		}
-
+		
 		callback();
 	});
 }
@@ -113,7 +113,7 @@ function checkForUpdates(callback) {
 		} else {
 			logger.warn("Error while retrieving version: " + err + " " + JSON.stringify(response));
 		}
-
+		
 		callback();
 	});
 }
@@ -128,7 +128,7 @@ function getStaticData(callback) {
 			staticData = JSON.parse(data);
 			staticData.extended = true;
 		}
-
+		
 		logger.info("Retrieving static data from server");
 		request({ url: "http://api.aof.gg/static", json: true ,timeout: 10000}, function(err, response, body) {
 			if (!err && response && response.statusCode == 200 && !body.err && body.data) {
@@ -138,7 +138,7 @@ function getStaticData(callback) {
 			} else {
 				logger.warn("Error while retrieving static data: " + err + " " + JSON.stringify(response));
 			}
-
+			
 			callback();
 		});
 	});
@@ -148,20 +148,20 @@ function getStaticData(callback) {
 // Extend the metadata of a replay with additional information
 function extendReplayMetadata(meta) {
 	meta.region = _.find(staticData.regions, function(region) { return region.Id == meta.regionId }).ShortName;
-
+	
 	if (staticData.extended) {
 		for (let i = 0; i < meta.players.length; i++) {
 			var p = meta.players[i];
-
+			
 			let champion = _.find(staticData.champions, function(champion) { return champion.Id == p.championId });
 			p.champion = { name: champion.Name, image: champion.Image };
-
+			
 			let league = _.find(staticData.leagues, function(league) { return league.Id == p.leagueId });
 			p.league = { name: league.Name, image: league.Image };
-
+			
 			let d = _.find(staticData.summonerSpells, function(spell) { return spell.Id == p.dId });
 			p.d = { name: d.Name, image: d.Image };
-
+			
 			let f = _.find(staticData.summonerSpells, function(spell) { return spell.Id == p.fId });
 			p.f = { name: f.Name, image: f.Image };
 		}
@@ -172,25 +172,25 @@ function extendReplayMetadata(meta) {
 
 // Called when the renderer is ready to display things
 ipc.on("ready", function(event, args) {
-
+	
 	mainWindow.webContents.send("loading", { loading: true, msg: "Loading user settings..." });
 	loadUserSettings(function() {
-
+		
 		mainWindow.webContents.send("loading", { loading: true, msg: "Checking for updates..." });
 		checkForUpdates(function() {
-
+			
 			mainWindow.webContents.send("loading", { loading: true, msg: "Retreiving static data..." });
 			getStaticData(function() {
-
+				
 				mainWindow.webContents.send("loading", { loading: true, msg: "Searching for league client..." });
 				lolClient.find(settings.lolClientPath, function(found) {
-
+					
 					mainWindow.webContents.send("loading", { loading: true, msg: "Starting local replay server..." });
 					replayServer.startServer();
-
+					
 					mainWindow.webContents.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
 					mainWindow.webContents.send("loading", { loading: false, msg: "" });
-
+					
 					saveUserSettings();
 				});
 			});
@@ -202,12 +202,12 @@ ipc.on("ready", function(event, args) {
 // Called when the user wants to select the league client manually
 ipc.on("selectClient", function(event, args) {
 	logger.info("ipc: Select client");
-
+	
 	var files = dialog.showOpenDialog({
 		filters: [{ name: 'League of Legends Client', extensions: ['app', 'exe'] }],
 		properties: [ "openFile" ]
 	});
-
+	
 	if (files && files.length == 1) {
 		lolClient.extractPath(files[0], function() {
 			event.sender.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
@@ -220,12 +220,12 @@ ipc.on("selectClient", function(event, args) {
 // Called when the user wants to open a replay
 ipc.on("openReplay", function(event, args) {
 	logger.info("ipc: Open replay");
-
+	
 	let files = dialog.showOpenDialog({
 		filters: [{ name: 'Replay File', extensions: ['aof'] }],
 		properties: [ "openFile" ]
 	});
-
+	
 	if (files && files.length == 1) {
 		aofParser.parse(files[0], function(err, replayMetadata, replayData) {
 			if (err) {
@@ -244,13 +244,12 @@ ipc.on("openReplay", function(event, args) {
 ipc.on("play", function(event, args) {
 	logger.info("ipc: Play replay");
 	replayServer.resetReplay();
-
+	
 	mainWindow.minimize();
-
-	lolClient.launch(replayServer.host(), replayServer.port(), staticData.regions[replay.regionId].ShortName,
-			replay.gameId, replay.key, function(success) {
+	
+	lolClient.launch(replayServer.host(), replayServer.port(), replay.region, replay.gameId, replay.key, function(success) {
 		mainWindow.restore();
-
+		
 		if (!success)
 			logger.error("Could not start league of legends client.");
 			event.sender.send("error", {
@@ -263,7 +262,7 @@ ipc.on("play", function(event, args) {
 
 ipc.on("sendLogs", function(event, data) {
 	logger.info("ipc: Send logs");
-
+	
 	let report = {
 		date: new Date(),
 		platform: process.platform,
@@ -277,7 +276,7 @@ ipc.on("sendLogs", function(event, data) {
 		comment: data.comment,
 		logs: fs.readFileSync(logFile, 'utf8')
 	};
-
+	
 	request({
 		url: "http://api.aof.gg/client/reports",
 		method: "POST",
@@ -305,13 +304,13 @@ app.on("ready", function() {
 		toolbar: false,
 		"auto-hide-menu-bar": true
 	});
-
+	
 	// Open the DevTools.
 	// mainWindow.openDevTools();
-
+	
 	// Load the index.html of the app.
 	mainWindow.loadUrl("file://" + __dirname + "/index.html");
-
+	
 	// When window is closed
 	mainWindow.on("closed", function() {
 		mainWindow = null;
