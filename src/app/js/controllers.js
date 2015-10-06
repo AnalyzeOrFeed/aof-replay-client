@@ -1,4 +1,4 @@
-var app = angular.module('app.controllers', []);
+var app = angular.module('app.controllers', ['ngSanitize']);
 
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
@@ -35,18 +35,49 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             $scope.showDialog("Client info", 'v' + $scope.aofClientInfo.currVersion + updateText, event);
         };
         $scope.showDialog = function(title, content, event) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element(document.querySelector('#popupContainer')))
-                    .clickOutsideToClose(true)
-                    .title(title)
-                    .content(content)
-                    .ariaLabel(title)
-                    .ok('ok')
-                    .targetEvent(event)
-            );   
+            $mdDialog.show({
+                    templateUrl: 'app/tpl/dialog-alert.html',
+                    controller: AlertController
+                });
+
+                $myScope = $scope;
+            function AlertController($scope, $mdDialog) {
+              $scope.title = title;
+              $scope.message = content;
+              $scope.openLogs = function() {
+                  $mdDialog.cancel();
+                  $myScope.showSendLogs();
+              };
+              $scope.cancel = function() {
+                  $mdDialog.cancel();
+              };
+            }
         };
-        
+
+        $scope.showSendLogs = function() {
+            $mdDialog.show({
+                    templateUrl: 'app/tpl/dialog-sendlogs.html',
+                    controller: DialogController
+                })
+                .then(function(data) {
+                    if (data) {
+                      $scope.sendLogs(data);
+                    };
+                });
+
+            function DialogController($scope, $mdDialog) {
+                $scope.send = function(email, comment) {
+                    $mdDialog.hide({email: email, comment: comment});
+                };
+                $scope.cancel = function() {
+                    $mdDialog.cancel();
+                };
+                $scope.hide = function() {
+                    $mdDialog.hide();
+                }
+            }
+        };
+
         $scope.announceClick = function(index) {
             if (index == 0) {
                 $scope.selectClient();
@@ -55,12 +86,12 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 $scope.showAofClientInfo();
             }
             if (index == 2) {
-                $scope.sendLogs();
+                $scope.showSendLogs();
             }
         };
 
-        $scope.sendLogs = function() {
-            ipc.send("sendLogs");
+        $scope.sendLogs = function(data) {
+            ipc.send("sendLogs", data);
         };
         
         $scope.openFile = function() {
@@ -72,7 +103,6 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         };
         
         $scope.playReplay = function() {
-            console.log("playing");
             ipc.send("play");
         };
         
@@ -94,7 +124,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 $scope.lolClientFound = obj.found;
                 $scope.lolClientVersion = obj.version;
                 var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
-                if (regex.length == 3) {
+                if (regex && regex.length == 3) {
                     $scope.lolClientVersionShort = regex[1] + "." + regex[2];
                 }
                 matchClientVersionToReplayVersion();

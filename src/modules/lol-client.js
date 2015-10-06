@@ -25,17 +25,16 @@ let regexLocations = [{
 	]
 }];
 
-// Try and find the league of legends client
-function checkPath(callback) {
+// Try and extract the league of legends client version
+function checkVersion(callback) {
 	let logPath = leaguePath + "/../Logs/Game - R3d Logs/";
-	
+
 	var errorCallback = function(err) {
-		logger.warn("Error checking path " + logPath + ": " + err);
-		leaguePath = false;
-		leagueVersion = "";
+		logger.warn("Error checking version " + logPath + ": " + err);
+		leagueVersion = "unknown";
 		callback(false);
 	};
-	
+
 	fs.readdir(logPath, function(err, files) {
 		if (err) {
 			errorCallback(err);
@@ -43,23 +42,46 @@ function checkPath(callback) {
 			files.sort(function(a, b) {
 				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
 			});
-			
+
 			fs.readFile(logPath + files[0], "utf8", function(err, content) {
 				if (err) {
 					errorCallback(err);
 				} else {
 					leagueVersion = content.substring(content.indexOf("Build Version:") + 15, content.indexOf("[PUBLIC]") - 1);
 					logger.info("LoL client version is: " + leagueVersion);
-					
-					fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
-						if (err) {
-							errorCallback(err);
-						} else {
-							fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
-							logger.info("Complete league path is " + fullPath);
-							
-							callback(true);
-						}
+					callback(true);
+				}
+			});
+		}
+	});
+};
+
+// Try and find the league of legends client
+function checkPath(callback) {
+
+	var errorCallback = function(err) {
+		logger.warn("Error checking path " + logPath + ": " + err);
+		leaguePath = false;
+		leagueVersion = "";
+		callback(false);
+	};
+
+	fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
+		if (err) {
+			errorCallback(err);
+		} else {
+			files.sort(function(a, b) {
+				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
+			});
+			fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
+
+			fs.readdir(fullPath, function(err, files) {
+				if (err) {
+					errorCallback(err);
+				} else {
+					logger.info("Complete league path is " + fullPath);
+					checkVersion(function(){
+						callback(true);
 					});
 				}
 			});
@@ -87,9 +109,9 @@ function findRegKey(hive, key, callback) {
 function find(hintPath, callback) {
 	leaguePath = false;
 	leagueVersion = "";
-	
+
 	logger.info("Searching for the League of Legends client");
-	
+
 	// Try the hint path if we have one
 	if (hintPath) {
 		leaguePath = hintPath;
@@ -112,7 +134,7 @@ function find(hintPath, callback) {
 							possiblePaths.push(path);
 						}
 						c++;
-						
+
 						if (c == num) {
 							if (possiblePaths.length == 0) {
 								callback(false);
@@ -120,12 +142,12 @@ function find(hintPath, callback) {
 								for (let k = 0; k < possiblePaths.length; k++) {
 									if (leaguePath)
 										break;
-									
+
 									logger.info("Checking possible LoL client @ " + possiblePaths[k]);
 									leaguePath = possiblePaths[k];
 									checkPath(callback);
 								}
-							}	
+							}
 						}
 					});
 				}
@@ -140,7 +162,7 @@ function find(hintPath, callback) {
 					checkPath(callback);
 				}
 			});
-		}	
+		}
 	}
 }
 
@@ -160,6 +182,7 @@ module.exports = function(extLogger) {
 		launch: function(host, port, replayRegionName, replayGameId, replayKey, callback) {
 			// Ask for LoL client path if we didn't find it
 			if (!fullPath) {
+				logger.error("fullPath not set");
 				callback(false);
 				return;
 			}
@@ -192,15 +215,22 @@ module.exports = function(extLogger) {
 				cmd = opts.cwd + "/LeagueofLegends";
 			}
 			
-			// Run LoL client
-			let client = spawn(cmd, args, opts);
-			client.on("error", function (err) {
-				logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!");
-				logger.error(err);
-				callback(false);
-			});
-			client.on("close", function (code) {
-				callback(true);
+			// Check if client is executable
+			fs.access(cmd, fs.X_OK, function (err) {
+  			if (err) {
+					logger.error("No permissions to execute the league of legends client.", {err: err});
+					callback(false);
+				} else {
+					// Run LoL client
+					let client = spawn(cmd, args, opts);
+					client.on("error", function (err) {
+						logger.error("!!! ERROR WHILE RUNNING THE LEAGUE OF LEGENDS CLIENT !!!", {err: err});
+						callback(false);
+					});
+					client.on("close", function (code) {
+						callback(true);
+					});
+				}
 			});
 		},
 		extractPath: function(file, callback) {
@@ -218,7 +248,7 @@ module.exports = function(extLogger) {
 				leaguePath = file + "/Contents/LoL/RADS";
 			}
 			logger.info("League path set to " + leaguePath);
-			
+
 			if (leaguePath)
 				checkPath(callback);
 			else

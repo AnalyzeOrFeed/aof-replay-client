@@ -38,7 +38,7 @@ if (!fs.existsSync(app.getPath("userCache") + "/logs/")){
 let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
 let logger = new winston.Logger({ transports: [] });
 logger.add(winston.transports.Console, {
-	"level": "info"
+	"level": "debug"
 });
 logger.add(winston.transports.File, {
 	"filename": logFile,
@@ -115,7 +115,7 @@ function checkForUpdates(callback) {
 		}
 		
 		callback();
-	});	
+	});
 }
 
 
@@ -141,7 +141,7 @@ function getStaticData(callback) {
 			
 			callback();
 		});
-	});	
+	});
 }
 
 
@@ -201,6 +201,8 @@ ipc.on("ready", function(event, args) {
 
 // Called when the user wants to select the league client manually
 ipc.on("selectClient", function(event, args) {
+	logger.info("ipc: Select client");
+	
 	var files = dialog.showOpenDialog({
 		filters: [{ name: 'League of Legends Client', extensions: ['app', 'exe'] }],
 		properties: [ "openFile" ]
@@ -217,6 +219,8 @@ ipc.on("selectClient", function(event, args) {
 
 // Called when the user wants to open a replay
 ipc.on("openReplay", function(event, args) {
+	logger.info("ipc: Open replay");
+	
 	let files = dialog.showOpenDialog({
 		filters: [{ name: 'Replay File', extensions: ['aof'] }],
 		properties: [ "openFile" ]
@@ -238,24 +242,28 @@ ipc.on("openReplay", function(event, args) {
 
 // Called when the user wants to play a replay
 ipc.on("play", function(event, args) {
+	logger.info("ipc: Play replay");
 	replayServer.resetReplay();
 	
 	mainWindow.minimize();
 	
-	lolClient.launch(replayServer.host(), replayServer.port(), staticData.regions[replay.regionId].ShortName, 
-			replay.gameId, replay.key, function(success) {
+	lolClient.launch(replayServer.host(), replayServer.port(), replay.region, replay.gameId, replay.key, function(success) {
 		mainWindow.restore();
 		
-		if (!success)
-			event.sender.send("error", { 
+		if (!success) {
+			logger.error("Could not start league of legends client.");
+			event.sender.send("error", {
 				title: "LoL Client error",
-				content: "Could not start the League of Legends client<br>Please send us your current log file so we can reproduce what happened. (You can send the report in the top right)."});
+				content: 'Could not start the League of Legends client<br />Please send us your current log file by clicking the button below and filling out the form.'
+			});
+		}
 	});
 });
 
 
-ipc.on("sendLogs", function(event, args) {
-	console.log("sending report");
+ipc.on("sendLogs", function(event, data) {
+	logger.info("ipc: Send logs");
+	
 	let report = {
 		date: new Date(),
 		platform: process.platform,
@@ -265,11 +273,11 @@ ipc.on("sendLogs", function(event, args) {
 			path: lolClient.leaguePath(),
 			version: lolClient.version()
 		},
+		email: data.email,
+		comment: data.comment,
 		logs: fs.readFileSync(logFile, 'utf8')
 	};
-
-	console.log(JSON.stringify(report));
-
+	
 	request({
 		url: "http://api.aof.gg/client/reports",
 		method: "POST",
@@ -278,15 +286,13 @@ ipc.on("sendLogs", function(event, args) {
 			"content-type": "application/json"
 		},
 		body: report
-	}, function(err,httpResponse,body){
+	}, function(err, httpResponse, body){
 		if (httpResponse.statusCode != 200) {
+			logger.error("Sending report failed.", {err: err, httpResponse: httpResponse, body: body});
 			event.sender.send("error", {
 				title: "Error sending report",
 				content: "Could not send error report.<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
-		} else {
-
 		}
-
 	});
 });
 

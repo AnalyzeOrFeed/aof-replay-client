@@ -1,6 +1,6 @@
 {
   "name": "aof-replay-client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "./index.js",
   "scripts": {
     "start": "./node_modules/.bin/electron ."
