@@ -3,11 +3,13 @@
   "version": "0.1.4",
   "main": "./index.js",
   "scripts": {
-    "start": "./node_modules/.bin/electron ."
+    "start": "./node_modules/.bin/electron .",
+    "postinstall" : "./node_modules/bower/bin/bower install"
   },
   "author": "Analyze Or Feed",
   "license": "MIT",
   "devDependencies": {
+    "bower": "^1.6.5",
     "express": "^4.13.3",
     "request": "^2.62.0",
     "underscore": "^1.8.3",
