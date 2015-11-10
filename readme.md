@@ -20,7 +20,7 @@ $ npm install
 ````
 in the root directory **AND** in the source directory.
 
-In the src/app directory, run
+In the src directory, run
 ````shell
 bower install
 ````
