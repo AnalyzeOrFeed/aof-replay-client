@@ -18,12 +18,7 @@ Afterwards, you need to run
 ````shell
 $ npm install
 ````
-in the root directory **AND** in the source directory.
-
-In the src directory, run
-````shell
-bower install
-````
+in the root directory.
 
 That's it! You should be able to test the app by running
 ````shell

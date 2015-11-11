@@ -58,9 +58,8 @@ function checkVersion(callback) {
 
 // Try and find the league of legends client
 function checkPath(callback) {
-
 	var errorCallback = function(err) {
-		logger.warn("Error checking path " + logPath + ": " + err);
+		logger.warn("Error checking path " + leaguePath + ": " + err);
 		leaguePath = false;
 		leagueVersion = "";
 		callback(false);
@@ -71,7 +70,7 @@ function checkPath(callback) {
 			errorCallback(err);
 		} else {
 			files.sort(function(a, b) {
-				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
+				return fs.statSync(leaguePath + b).mtime.getTime() - fs.statSync(leaguePath + a).mtime.getTime();
 			});
 			fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
 
