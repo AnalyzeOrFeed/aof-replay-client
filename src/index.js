@@ -102,7 +102,7 @@ function checkForUpdates(callback) {
 		logger.warn("Could not check for updates, request timed out");
 		callback();
 	}, 5000);
-	let req = request({ url: "http://api.aof.gg/v2/client/version", json: true }, function(err, response, body) {
+	let req = request({ url: "https://api.aof.gg/v2/client/version", json: true }, function(err, response, body) {
 		clearTimeout(timeout);
 		
 		// Set the new version info if there is one
@@ -304,7 +304,7 @@ ipc.on("sendLogs", function(event, data) {
 	};
 	
 	request({
-		url: "http://api.aof.gg/client/reports",
+		url: "https://api.aof.gg/v2/client/reports",
 		method: "POST",
 		json: true,
 		headers: {
@@ -313,7 +313,7 @@ ipc.on("sendLogs", function(event, data) {
 		body: report
 	}, function(err, httpResponse, body){
 		if (httpResponse.statusCode != 200) {
-			logger.error("Sending report failed.", {err: err, httpResponse: httpResponse, body: body});
+			logger.error("Sending report failed.", {err: err, httpResponse: httpResponse.statusCode, body: body});
 			event.sender.send("error", {
 				title: "Error sending report",
 				content: "Could not send error report.<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
