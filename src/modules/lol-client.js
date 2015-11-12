@@ -4,6 +4,7 @@ let fs = require("fs");
 let winreg = require("winreg");
 let spawn = require("child_process").spawn;
 let _ = require("underscore");
+let domain = require("domain");
 let logger;
 
 let leaguePath = false;
@@ -94,13 +95,20 @@ function findRegKey(hive, key, callback) {
 		hive: hive,
 		key:  key
 	});
-	regKey.get("LocalRootFolder", function(err, item) {
-		if (err) {
-			logger.warn("Couldn't find registry key " + hive + key);
-			callback()
-		} else {
-			callback(item.value);
-		}
+	
+	let d = domain.create();
+	d.on("error", function(err) {
+		logger.warn("Code: %s, errno: %s, syscall: %s, path: %s, spawnargs: %s", err.code, err.errno, err.syscall, err.path, JSON.stringify(err.spawnargs));
+	});
+	d.run(function() {
+		regKey.get("LocalRootFolder", function(err, item) {
+			if (err) {
+				logger.warn("Couldn't find registry key " + hive + key);
+				callback();
+			} else {
+				callback(item.value);
+			}
+		});
 	});
 };
 
