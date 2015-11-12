@@ -9,6 +9,7 @@ let _  = require("underscore");
 let fs = require("fs");
 let winston = require("winston");
 
+let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.21.1/";
 let replay = null;
 let mainWindow = null;
 let settings = {};
@@ -101,18 +102,19 @@ function checkForUpdates(callback) {
 		logger.warn("Could not check for updates, request timed out");
 		callback();
 	}, 5000);
-	let req = request({ url: "http://api.aof.gg/version", json: true }, function(err, response, body) {
+	let req = request({ url: "https://api.aof.gg/v2/client/version", json: true }, function(err, response, body) {
 		clearTimeout(timeout);
+		
+		// Set the new version info if there is one
 		if (!err && response && response.statusCode == 200) {
-			// Set the new version info if there is one
 			if (version.currVersion != body.version) {
 				version.newVersion = body.version;
 				version.msg = body.msg;
 			}
-			mainWindow.webContents.send("aofUpdate", version);
 		} else {
 			logger.warn("Error while retrieving version: " + err + " " + JSON.stringify(response));
 		}
+		mainWindow.webContents.send("aofUpdate", version);
 		
 		callback();
 	});
@@ -126,18 +128,35 @@ function getStaticData(callback) {
 		if (!err) {
 			logger.info("Reading static data from local cache");
 			staticData = JSON.parse(data);
-			staticData.extended = true;
 		}
 		
 		logger.info("Retrieving static data from server");
-		request({ url: "http://api.aof.gg/static", json: true ,timeout: 10000}, function(err, response, body) {
-			if (!err && response && response.statusCode == 200 && !body.err && body.data) {
-				staticData = body.data;
-				staticData.extended = true;
-				fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
-			} else {
+		request({ url: "https://api.aof.gg/v2/data/static", json: true, timeout: 10000}, function(err, response, body) {			
+			if (err || !response || response.statusCode != 200) {
 				logger.warn("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+				return;
 			}
+			staticData.regions = body.regions;
+			staticData.leagues = body.leagues;
+			fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
+			
+			logger.info("Getting champion info");
+			request({ url: ddragonBase + "data/en_US/champion.json", json: true, timeout: 10000 }, function(err, response, body) {
+				if (!err && response && response.statusCode == 200) {
+					staticData.champions = body.data;
+				} else {
+					logger.warn("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+				}
+			});
+			
+			logger.info("Getting summoner spell info");
+			request({ url: ddragonBase + "data/en_US/summoner.json", json: true, timeout: 10000 }, function(err, response, body) {
+				if (!err && response && response.statusCode == 200) {
+					staticData.summonerSpells = body.data;
+				} else {
+					logger.warn("Error while retrieving static data: " + err + " " + JSON.stringify(response));
+				}
+			});
 			
 			callback();
 		});
@@ -147,23 +166,29 @@ function getStaticData(callback) {
 
 // Extend the metadata of a replay with additional information
 function extendReplayMetadata(meta) {
-	meta.region = _.find(staticData.regions, function(region) { return region.Id == meta.regionId }).ShortName;
+	meta.region = _.find(staticData.regions, function(region) { return region.id == meta.regionId }).shortName;
 	
-	if (staticData.extended) {
-		for (let i = 0; i < meta.players.length; i++) {
-			var p = meta.players[i];
-			
-			let champion = _.find(staticData.champions, function(champion) { return champion.Id == p.championId });
-			p.champion = { name: champion.Name, image: champion.Image };
-			
-			let league = _.find(staticData.leagues, function(league) { return league.Id == p.leagueId });
-			p.league = { name: league.Name, image: league.Image };
-			
-			let d = _.find(staticData.summonerSpells, function(spell) { return spell.Id == p.dId });
-			p.d = { name: d.Name, image: d.Image };
-			
-			let f = _.find(staticData.summonerSpells, function(spell) { return spell.Id == p.fId });
-			p.f = { name: f.Name, image: f.Image };
+	for (let i = 0; i < meta.players.length; i++) {
+		var p = meta.players[i];
+		
+		if (staticData.champions) {
+			let champion = _.find(staticData.champions, function(champion) { return champion.key == p.championId });
+			p.champion = { name: champion.name, image: champion.image.full };
+		}
+		
+		if (staticData.leagues) {
+			let league = _.find(staticData.leagues, function(league) { return league.id == p.leagueId });
+			p.league = { name: league.name, image: league.name.toLowerCase() + ".png" };
+		}
+		
+		if (staticData.summonerSpells) {
+			let d = _.find(staticData.summonerSpells, function(spell) { return spell.key == p.dId });
+			p.d = { name: d.name, image: d.image.full };
+		}
+		
+		if (staticData.summonerSpells) {
+			let f = _.find(staticData.summonerSpells, function(spell) { return spell.key == p.fId });
+			p.f = { name: f.name, image: f.image.full };
 		}
 	}
 	return meta;
@@ -279,7 +304,7 @@ ipc.on("sendLogs", function(event, data) {
 	};
 	
 	request({
-		url: "http://api.aof.gg/client/reports",
+		url: "https://api.aof.gg/v2/client/reports",
 		method: "POST",
 		json: true,
 		headers: {
@@ -288,7 +313,7 @@ ipc.on("sendLogs", function(event, data) {
 		body: report
 	}, function(err, httpResponse, body){
 		if (httpResponse.statusCode != 200) {
-			logger.error("Sending report failed.", {err: err, httpResponse: httpResponse, body: body});
+			logger.error("Sending report failed.", {err: err, httpResponse: httpResponse.statusCode, body: body});
 			event.sender.send("error", {
 				title: "Error sending report",
 				content: "Could not send error report.<br>Please report your issue to support@aof.gg and provide the following file: " + logFile });
@@ -307,7 +332,7 @@ app.on("ready", function() {
 	});
 	
 	// Open the DevTools.
-	// mainWindow.openDevTools();
+	//mainWindow.openDevTools();
 	
 	// Load the index.html of the app.
 	mainWindow.loadUrl("file://" + __dirname + "/index.html");

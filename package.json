@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": "gulpfile.js",
   "scripts": {
-    "postinstall": "cd src; npm install",
+    "postinstall": "npm install --prefix src",
     "start": "./node_modules/.bin/electron ./src",
     "build": "./node_modules/.bin/gulp"
   },

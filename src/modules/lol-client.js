@@ -4,6 +4,7 @@ let fs = require("fs");
 let winreg = require("winreg");
 let spawn = require("child_process").spawn;
 let _ = require("underscore");
+let domain = require("domain");
 let logger;
 
 let leaguePath = false;
@@ -58,9 +59,8 @@ function checkVersion(callback) {
 
 // Try and find the league of legends client
 function checkPath(callback) {
-
 	var errorCallback = function(err) {
-		logger.warn("Error checking path " + logPath + ": " + err);
+		logger.warn("Error checking path " + leaguePath + ": " + err);
 		leaguePath = false;
 		leagueVersion = "";
 		callback(false);
@@ -71,7 +71,7 @@ function checkPath(callback) {
 			errorCallback(err);
 		} else {
 			files.sort(function(a, b) {
-				return fs.statSync(logPath + b).mtime.getTime() - fs.statSync(logPath + a).mtime.getTime();
+				return fs.statSync(leaguePath + b).mtime.getTime() - fs.statSync(leaguePath + a).mtime.getTime();
 			});
 			fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
 
@@ -95,13 +95,20 @@ function findRegKey(hive, key, callback) {
 		hive: hive,
 		key:  key
 	});
-	regKey.get("LocalRootFolder", function(err, item) {
-		if (err) {
-			logger.warn("Couldn't find registry key " + hive + key);
-			callback()
-		} else {
-			callback(item.value);
-		}
+	
+	let d = domain.create();
+	d.on("error", function(err) {
+		logger.warn("Code: %s, errno: %s, syscall: %s, path: %s, spawnargs: %s", err.code, err.errno, err.syscall, err.path, JSON.stringify(err.spawnargs));
+	});
+	d.run(function() {
+		regKey.get("LocalRootFolder", function(err, item) {
+			if (err) {
+				logger.warn("Couldn't find registry key " + hive + key);
+				callback();
+			} else {
+				callback(item.value);
+			}
+		});
 	});
 };
 

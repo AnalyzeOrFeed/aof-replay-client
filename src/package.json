@@ -1,10 +1,10 @@
 {
   "name": "aof-replay-client",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "main": "./index.js",
   "scripts": {
-    "start": "./node_modules/.bin/electron .",
-    "postinstall" : "./node_modules/bower/bin/bower install"
+    "start": "cd .. && npm start",
+    "postinstall" : "./node_modules/.bin/bower install"
   },
   "author": "Analyze Or Feed",
   "license": "MIT",

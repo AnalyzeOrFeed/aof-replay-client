@@ -2,9 +2,8 @@ var app = angular.module('app.controllers', ['ngSanitize']);
 
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
-        
         var ipc = require('ipc');
-
+        
         var matchClientVersionToReplayVersion = function() {
             if ($scope.lolClientVersion && $scope.replay && $scope.replay.riotVersion) {
                 var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
@@ -14,7 +13,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 }
             }
         };
-
+        
         $scope.loading = true;
         $scope.msg = "Loading...";
         $scope.replay = null;
@@ -23,7 +22,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         $scope.lolClientVersionShort = "";
         $scope.aofClientInfo = {};
         $scope.replayVersionMatch = true;
-
+        
         $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" }, { id: 3, name: "Send current log to aof.gg" } ];
         
         $scope.showAofClientInfo = function(event) {
