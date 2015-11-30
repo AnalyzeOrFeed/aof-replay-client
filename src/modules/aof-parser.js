@@ -44,7 +44,7 @@ module.exports = function(extLogger) {
             replayMetadata.complete = buff.readUInt8(c);                c += 1;
             replayMetadata.endStartupChunkId = buff.readUInt8(c);       c += 1;
             replayMetadata.startGameChunkId = buff.readUInt8(c);        c += 1;
-            
+
             // Read the player data
             replayMetadata.players = [];
             let num = buff.readUInt8(c);                                c += 1;

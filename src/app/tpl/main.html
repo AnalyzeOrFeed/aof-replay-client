@@ -34,10 +34,10 @@
                         <tr ng-repeat="player in replay.players | filter: { 'teamNr': 0 }">
                             <td>{{ player.summonerName }}</td>
                             <td style="text-align: center;">
-                                <img style="float: left; margin-right: 2px; margin-left: 2px;" ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/champion/{{player.champion.image}}" width="48" height="48" />
+                                <img style="float: left; margin-right: 2px; margin-left: 2px;" ng-src="{{ddragonBase}}champion/{{player.champion.image}}" width="48" height="48" />
                                 <div style="float: left;">
-                                    <div class="spell1"><img ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/spell/{{player.d.image}}" width="23" height="23"></div>
-                                    <div class="spell2"><img ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/spell/{{player.f.image}}" width="23" height="23"></div>
+                                    <div class="spell1"><img ng-src="{{ddragonBase}}spell/{{player.d.image}}" width="23" height="23"></div>
+                                    <div class="spell2"><img ng-src="{{ddragonBase}}spell/{{player.f.image}}" width="23" height="23"></div>
                                 </div>
                             </td>
                             <td style="text-align: center;">
@@ -64,10 +64,10 @@
                                 </md-tooltip>
                             </td>
                             <td style="text-align: center;">
-                                <img style="float: right; margin-right: 2px; margin-left: 2px;" ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/champion/{{player.champion.image}}" width="48" height="48" />
+                                <img style="float: right; margin-right: 2px; margin-left: 2px;" ng-src="{{ddragonBase}}champion/{{player.champion.image}}" width="48" height="48" />
                                 <div style="float: right;">
-                                    <div class="spell1"><img ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/spell/{{player.d.image}}" width="23" height="23"></div>
-                                    <div class="spell2"><img ng-src="http://ddragon.leagueoflegends.com/cdn/5.21.1/img/spell/{{player.f.image}}" width="23" height="23"></div>
+                                    <div class="spell1"><img ng-src="{{ddragonBase}}spell/{{player.d.image}}" width="23" height="23"></div>
+                                    <div class="spell2"><img ng-src="{{ddragonBase}}spell/{{player.f.image}}" width="23" height="23"></div>
                                 </div>
                             <td style="text-align: right;">{{ player.summonerName }}</td>
                         </tr>
