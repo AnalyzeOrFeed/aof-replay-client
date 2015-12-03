@@ -9,7 +9,7 @@ let _  = require("underscore");
 let fs = require("fs");
 let winston = require("winston");
 
-let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.21.1/";
+let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.23.1/";
 let replay = null;
 let mainWindow = null;
 let settings = {};

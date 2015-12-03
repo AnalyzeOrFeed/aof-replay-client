@@ -3,7 +3,7 @@ var app = angular.module('app.controllers', ['ngSanitize']);
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
         var ipc = require('ipc');
-        
+
         var matchClientVersionToReplayVersion = function() {
             if ($scope.lolClientVersion && $scope.replay && $scope.replay.riotVersion) {
                 var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
@@ -14,6 +14,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             }
         };
         
+        $scope.ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.23.1/img/";
         $scope.loading = true;
         $scope.msg = "Loading...";
         $scope.replay = null;

@@ -44,7 +44,7 @@ module.exports = function(extLogger) {
             replayMetadata.complete = buff.readUInt8(c);                c += 1;
             replayMetadata.endStartupChunkId = buff.readUInt8(c);       c += 1;
             replayMetadata.startGameChunkId = buff.readUInt8(c);        c += 1;
-            
+
             // Read the player data
             replayMetadata.players = [];
             let num = buff.readUInt8(c);                                c += 1;
@@ -67,10 +67,20 @@ module.exports = function(extLogger) {
             
             // Read the keyframes
             replayData.keyframes = [];
-            num = buff.readUInt8(c);                                    c += 1;
+            if (replayMetadata.version < 11) {
+                num = buff.readUInt8(c);                                c += 1;
+            } else {
+                num = buff.readUInt16BE(c);                             c += 2;
+            }
             for (let i = 0; i < num; i++) {
                 let keyframe = {};
-                keyframe.id = buff.readUInt8(c);                        c += 1;
+                if (replayMetadata.version < 11) {
+                    keyframe.id = buff.readUInt8(c);                    c += 1;
+                } else if (replayMetadata.version == 11) {
+                    keyframe.id = i + 1;                                c += 1;
+                } else {
+                    keyframe.id = buff.readUInt16BE(c);                 c += 2;
+                }
                 len = buff.readInt32BE(c);                              c += 4;
                 keyframe.data = new Buffer(len);
                 buff.copy(keyframe.data, 0, c, c + len);                c += len;
@@ -80,10 +90,20 @@ module.exports = function(extLogger) {
             
             // Read the chunks
             replayData.chunks = [];
-            num = buff.readUInt8(c);                                    c += 1;
+            if (replayMetadata.version < 11) {
+                num = buff.readUInt8(c);                                c += 1;
+            } else {
+                num = buff.readUInt16BE(c);                             c += 2;
+            }
             for (let i = 0; i < num; i++) {
                 let chunk = {};
-                chunk.id = buff.readUInt8(c);                           c += 1;
+                if (replayMetadata.version < 11) {
+                    chunk.id = buff.readUInt8(c);                       c += 1;
+                } else if (replayMetadata.version == 11) {
+                    chunk.id = i + 1;                                   c += 1;
+                } else {
+                    chunk.id = buff.readUInt16BE(c);                    c += 2;
+                }
                 len = buff.readInt32BE(c);                              c += 4;
                 chunk.data = new Buffer(len);
                 buff.copy(chunk.data, 0, c, c + len);                   c += len;
