@@ -76,8 +76,10 @@ module.exports = function(extLogger) {
                 let keyframe = {};
                 if (replayMetadata.version < 11) {
                     keyframe.id = buff.readUInt8(c);                    c += 1;
+                } else if (replayMetadata.version == 11) {
+                    keyframe.id = i + 1;                                c += 1;
                 } else {
-                    keyframe.id = buff.readUInt16BE(c);                 c += 1;
+                    keyframe.id = buff.readUInt16BE(c);                 c += 2;
                 }
                 len = buff.readInt32BE(c);                              c += 4;
                 keyframe.data = new Buffer(len);
@@ -97,8 +99,10 @@ module.exports = function(extLogger) {
                 let chunk = {};
                 if (replayMetadata.version < 11) {
                     chunk.id = buff.readUInt8(c);                       c += 1;
+                } else if (replayMetadata.version == 11) {
+                    chunk.id = i + 1;                                   c += 1;
                 } else {
-                    chunk.id = buff.readUInt16BE(c);                    c += 1;
+                    chunk.id = buff.readUInt16BE(c);                    c += 2;
                 }
                 len = buff.readInt32BE(c);                              c += 4;
                 chunk.data = new Buffer(len);
