@@ -7,6 +7,8 @@ let _ = require("underscore");
 let domain = require("domain");
 let logger;
 
+const INTERNAL_PATH = "/solutions/lol_game_client_sln/releases/";
+
 let leaguePath = false;
 let fullPath = false;
 let leagueVersion = "";
@@ -66,14 +68,14 @@ function checkPath(callback) {
 		callback(false);
 	};
 
-	fs.readdir(leaguePath + "/solutions/lol_game_client_sln/releases/", function(err, files) {
+	fs.readdir(leaguePath + INTERNAL_PATH, function(err, files) {
 		if (err) {
 			errorCallback(err);
 		} else {
 			files.sort(function(a, b) {
-				return fs.statSync(leaguePath + b).mtime.getTime() - fs.statSync(leaguePath + a).mtime.getTime();
+				return fs.statSync(leaguePath + INTERNAL_PATH + b).mtime.getTime() - fs.statSync(leaguePath + INTERNAL_PATH + a).mtime.getTime();
 			});
-			fullPath = leaguePath + "/solutions/lol_game_client_sln/releases/" + files[0] + "/deploy/";
+			fullPath = leaguePath + INTERNAL_PATH + files[0] + "/deploy/";
 
 			fs.readdir(fullPath, function(err, files) {
 				if (err) {
