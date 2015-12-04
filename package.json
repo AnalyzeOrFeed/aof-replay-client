@@ -5,12 +5,13 @@
   "scripts": {
     "postinstall": "npm install --prefix src",
     "start": "./node_modules/.bin/electron ./src",
+    "test": "",
     "build": "./node_modules/.bin/gulp"
   },
   "author": "Analyze Or Feed",
   "license": "MIT",
   "devDependencies": {
-    "electron-prebuilt": "^0.34.3",
+    "electron-prebuilt": "^0.35.2",
     "gulp": "^3.9.0",
     "gulp-electron": "0.0.9",
     "gulp-util": "^3.0.7"
