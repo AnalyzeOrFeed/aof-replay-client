@@ -1,4 +1,5 @@
 # AnalyzeOrFeed Replay Client
+[![Build Status](https://travis-ci.org/AnalyzeOrFeed/aof-replay-client.svg?branch=master)](https://travis-ci.org/AnalyzeOrFeed/aof-replay-client)
 
 The aof.gg Replay Client is built using Electron. This means the app is compatible with both Windows and Mac. You can download the packaged files here:
 
