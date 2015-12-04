@@ -1,10 +1,10 @@
 "use strict";
 
-let app = require("app");
+let app = require("electron").app;
 let request = require("request");
-let ipc = require("ipc");
-let dialog = require("dialog");
-let BrowserWindow = require("browser-window");
+let ipc = require("electron").ipcMain;
+let dialog = require("electron").dialog;
+let BrowserWindow = require("electron").BrowserWindow;
 let _  = require("underscore");
 let fs = require("fs");
 let winston = require("winston");
@@ -335,7 +335,7 @@ app.on("ready", function() {
 	//mainWindow.openDevTools();
 	
 	// Load the index.html of the app.
-	mainWindow.loadUrl("file://" + __dirname + "/index.html");
+	mainWindow.loadURL("file://" + __dirname + "/index.html");
 	
 	// When window is closed
 	mainWindow.on("closed", function() {

@@ -2,7 +2,7 @@ var app = angular.module('app.controllers', ['ngSanitize']);
 
 app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
     function($scope, $rootScope, $mdDialog) {
-        var ipc = require('ipc');
+        var ipc = require("electron").ipcRenderer;
 
         var matchClientVersionToReplayVersion = function() {
             if ($scope.lolClientVersion && $scope.replay && $scope.replay.riotVersion) {
@@ -106,23 +106,25 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             ipc.send("play");
         };
         
-        ipc.on("loading", function(obj) {
+        ipc.on("loading", function(event, obj) {
             $scope.$apply(function() {
                 $scope.loading = obj.loading;
                 $scope.msg = obj.msg;
             });
         });
         
-        ipc.on("aofUpdate", function(obj) {
+        ipc.on("aofUpdate", function(event, obj) {
             $scope.$apply(function() {
                 $scope.aofClientInfo = obj;
             });
         });
         
-        ipc.on("clientInfo", function(obj) {
+        ipc.on("clientInfo", function(event, obj) {
+            console.log(obj);
             $scope.$apply(function() {
                 $scope.lolClientFound = obj.found;
                 $scope.lolClientVersion = obj.version;
+                console.log($scope.lolClientVersion);
                 var regex = $scope.lolClientVersion.match(/(?:.*?\s)(\d+)\.(\d+)\./);
                 if (regex && regex.length == 3) {
                     $scope.lolClientVersionShort = regex[1] + "." + regex[2];
@@ -131,14 +133,14 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             });
         });
         
-        ipc.on("parsedReplayFile", function(obj) {
+        ipc.on("parsedReplayFile", function(event, obj) {
             $scope.$apply(function() {
                 $scope.replay = obj;
                 matchClientVersionToReplayVersion();
             });
         });
         
-        ipc.on("error", function(obj) {
+        ipc.on("error", function(event, obj) {
             $scope.showDialog(obj.title, obj.content);
         });
         
