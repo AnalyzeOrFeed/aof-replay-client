@@ -14,7 +14,8 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             }
         };
         
-        $scope.ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.23.1/img/";
+        $scope.ddragonBase = "http://ddragon.leagueoflegends.com/cdn/";
+        $scope.ddragonVersion = "6.2.1/";
         $scope.loading = true;
         $scope.msg = "Loading...";
         $scope.replay = null;
@@ -119,8 +120,11 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             });
         });
         
+        ipc.on("staticData", function(event, obj) {
+            $scope.ddragonVersion = obj.version;
+        });
+
         ipc.on("clientInfo", function(event, obj) {
-            console.log(obj);
             $scope.$apply(function() {
                 $scope.lolClientFound = obj.found;
                 $scope.lolClientVersion = obj.version;

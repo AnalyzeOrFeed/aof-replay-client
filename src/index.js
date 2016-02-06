@@ -9,7 +9,8 @@ let _  = require("underscore");
 let fs = require("fs");
 let winston = require("winston");
 
-let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/5.23.1/";
+let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/";
+let ddragonVersion = "6.2.1/";
 let replay = null;
 let mainWindow = null;
 let settings = {};
@@ -140,8 +141,10 @@ function getStaticData(callback) {
 			staticData.leagues = body.leagues;
 			fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
 			
+			ddragonVersion = body.newestVersion.riotVersion + "/";
+
 			logger.info("Getting champion info");
-			request({ url: ddragonBase + "data/en_US/champion.json", json: true, timeout: 10000 }, function(err, response, body) {
+			request({ url: ddragonBase + ddragonVersion + "data/en_US/champion.json", json: true, timeout: 10000 }, function(err, response, body) {
 				if (!err && response && response.statusCode == 200) {
 					staticData.champions = body.data;
 				} else {
@@ -150,7 +153,7 @@ function getStaticData(callback) {
 			});
 			
 			logger.info("Getting summoner spell info");
-			request({ url: ddragonBase + "data/en_US/summoner.json", json: true, timeout: 10000 }, function(err, response, body) {
+			request({ url: ddragonBase + ddragonVersion + "data/en_US/summoner.json", json: true, timeout: 10000 }, function(err, response, body) {
 				if (!err && response && response.statusCode == 200) {
 					staticData.summonerSpells = body.data;
 				} else {
@@ -207,6 +210,8 @@ ipc.on("ready", function(event, args) {
 			mainWindow.webContents.send("loading", { loading: true, msg: "Retreiving static data..." });
 			getStaticData(function() {
 				
+				mainWindow.webContents.send("staticData", { version: ddragonVersion });
+
 				mainWindow.webContents.send("loading", { loading: true, msg: "Searching for league client..." });
 				lolClient.find(settings.lolClientPath, function(found) {
 					
