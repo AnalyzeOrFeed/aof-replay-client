@@ -1,20 +1,20 @@
 "use strict";
 
-let app = require("electron").app;
-let request = require("request");
-let ipc = require("electron").ipcMain;
-let dialog = require("electron").dialog;
+let app           = require("electron").app;
+let request       = require("request");
+let ipc           = require("electron").ipcMain;
+let dialog        = require("electron").dialog;
 let BrowserWindow = require("electron").BrowserWindow;
-let _  = require("underscore");
-let fs = require("fs");
-let winston = require("winston");
+let _             = require("underscore");
+let fs            = require("fs");
+let winston       = require("winston");
 
-let ddragonBase = "http://ddragon.leagueoflegends.com/cdn/";
+let ddragonBase    = "http://ddragon.leagueoflegends.com/cdn/";
 let ddragonVersion = "6.2.1/";
-let replay = null;
-let mainWindow = null;
-let settings = {};
-let staticData = {
+let replay         = null;
+let mainWindow     = null;
+let settings       = {};
+let staticData     = {
 	extended: false,
 	regions: [
 		{"Id":5,"Name":"Brazil","ShortName":"BR"},
@@ -47,6 +47,9 @@ logger.add(winston.transports.File, {
 	"level": "debug"
 });
 
+fs.mkdir("cache");
+fs.mkdir("replays");
+
 
 // Add global error handlers
 process.on("uncaughtException", function (error) {
@@ -66,6 +69,7 @@ logger.info("Application data path: " + app.getPath("userCache"));
 let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
 let replayServer = require(__dirname + "/modules/replay-server.js")(logger);
 let lolClient = require(__dirname + "/modules/lol-client.js")(logger);
+let aofApi = require(__dirname + "/modules/aof-api.js")(logger);
 
 
 // Quit when all windows are closed.
@@ -271,13 +275,16 @@ ipc.on("openReplay", function(event, args) {
 
 
 // Called when the user wants to play a replay
+let playingReplay = false;
 ipc.on("play", function(event, args) {
 	logger.info("ipc: Play replay");
 	replayServer.resetReplay();
 	
+	playingReplay = true;
 	mainWindow.minimize();
 	
 	lolClient.launch(replayServer.host(), replayServer.port(), replay.region, replay.gameId, replay.key, function(success) {
+		playingReplay = false;
 		mainWindow.restore();
 		
 		if (!success) {
@@ -326,6 +333,41 @@ ipc.on("sendLogs", function(event, data) {
 	});
 });
 
+let leagueRunning = false;
+let checkForLeague = function() {
+	if (playingReplay) return;
+	
+	var exec = require('child_process').exec;
+	exec('tasklist', function(err, stdout, stderr) {
+		let splits = stdout.split("\n");
+		let proc = _.find(splits, function(proc) {
+			return proc.indexOf("League of Legends") === 0 && proc.indexOf("Console") > 0;
+		});
+
+		if (proc && !leagueRunning) {
+			aofApi.checkMe(function(game) {
+				if (game) {
+					logger.info("We're ingame!");
+					game.state = 1;
+					game.region = { id: 1, url: "http://spectator.euw1.lol.riotgames.com/", spec: "EUW1" };
+					game.metaErrors = 0;
+					game.key = game.regionId + "-" + game.gameId;
+					game.oldKeyframeId = game.newestKeyframeId = 0;
+					game.oldChunkId = game.newestChunkId = 0;
+					game.chunks = [ null ];
+					game.keyframes = [ null ];
+					game.running = 0;
+					updateGame(game);
+				} else {
+					logger.info("False alarm");
+				}
+			});
+		}
+
+		leagueRunning = proc ? true : false;
+		mainWindow.webContents.send("gameSwitch", leagueRunning);
+	});
+};
 
 // Setup windows
 app.on("ready", function() {
@@ -346,4 +388,308 @@ app.on("ready", function() {
 	mainWindow.on("closed", function() {
 		mainWindow = null;
 	});
+
+	setInterval(checkForLeague, 1000);
 });
+
+let updateGame = function(game) {
+	let retry = function(time) {
+		// Check what to do next
+		if (game.metaErrors > 10) {
+			logger.warn("Canceled game %s", game.key);
+		} else {
+			// Wait for timeout for next check
+			setTimeout(function() {
+				updateGame(game);
+			}, time);
+		}
+	};
+
+	if (game.state == 1) {
+		let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getGameMetaData/" + game.region.spec + "/" + game.gameId + "/0/token");
+		request.get(url, options, function(err, response, metaData) {
+			if (err || response.statusCode != 200) {
+				logger.warn("GameMetaData error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
+				game.metaErrors++;
+				retry(10000);
+			} else if (metaData.startGameChunkId > 0) {
+				game.endStartupChunkId = metaData.endStartupChunkId;
+				game.startGameChunkId = metaData.startGameChunkId;
+				game.isFeatured = metaData.featuredGame;
+				game.mmr = metaData.interestScore;
+				
+				game.state = 2;
+				
+				retry(0);
+			} else {
+				logger.log("info", "Game %s hasn't started yet", game.key);
+				retry(30000);
+			}
+		});
+	} else if (game.state == 2) {
+		let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getLastChunkInfo/" + game.region.spec + "/" + game.gameId + "/0/token");
+		request.get(url, options, function(err, response, chunkInfo) {
+			if (err || response.statusCode != 200) {
+				logger.warn("LastChunkInfo error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
+				game.metaErrors++;
+				retry(10000);
+				return;
+			}
+
+			game.oldKeyframeId = game.newestKeyframeId;
+			game.oldChunkId = game.newestChunkId;
+			
+			game.newestKeyframeId = Math.max(game.newestKeyframeId, chunkInfo.keyFrameId);
+			game.newestChunkId = Math.max(game.newestChunkId, chunkInfo.chunkId);
+			game.isDone = game.newestChunkId != 0 && game.newestChunkId == chunkInfo.endGameChunkId;
+			
+			// Download new keyframes and chunks
+			for (let i = game.oldKeyframeId + 1; i <= game.newestKeyframeId; i++) {
+				game.running++;
+				downloadObject(game, 1, i, 0);
+			}
+			for (let i = game.oldChunkId + 1; i <= game.newestChunkId; i++) {
+				game.running++;
+				downloadObject(game, 0, i, 0);
+			}
+			
+			if (!game.isDone) {
+				retry(chunkInfo.nextAvailableChunk + 1000);
+				return;
+			}
+			
+			// Check for active downloads
+			if (game.running > 0 && game.isWaiting < 10) {
+				logger.info("Game %s has %s downloads running", game.key, game.running);
+				
+				game.isWaiting++;
+				retry(10000);
+				return;
+			} else if (game.isWaiting >= 10) {
+				logger.warn("Game %s continues after waiting 10 times", game.key);
+			}
+			
+			// Get meta data for endgame stats
+			let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getGameMetaData/" + game.region.spec + "/" + game.gameId + "/0/token");
+			request.get(url, options, function(err, response, metaData) {
+				if (err || response.statusCode != 200) {
+					logger.warn("GameMetaData error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
+					game.metaErrors++;
+					retry(10000);
+				} else {
+					if (metaData.gameEnded) {
+						logger.info("Game %s is done", game.key);
+						
+						game.state = 3;
+						
+						finishGame(game);
+					} else {
+						logger.warn("Last available chunk but game %s isn't done", game.key);
+						retry(10000);
+					}
+				}
+			});
+		});
+	} else if (game.state == 3) {
+		logger.warn("Game %s is alredy done", game.key);
+	} else {
+		logger.warn("Game %s is already done and uploaded", game.key);
+	}
+};
+
+let dir = "cache/";
+let options = { timeout: 10000, json: true };
+let downloadObject = function(game, typeId, objectId, tries) {
+	let start = process.hrtime();
+	let key = game.region.id + "-" + game.gameId + "-" + (typeId === 1 ? "K" : "C") + "-" + objectId;
+	let url = game.region.url + "observer-mode/rest/consumer/" + (typeId === 1 ? "getKeyFrame" : "getGameDataChunk") + "/" + 
+		game.region.spec + "/" + game.gameId + "/" + objectId + "/token?rito=" + (new Date()).getTime();
+	
+	tries++;
+	logger.log("info", "Downloading %s try #%s", key, tries);
+	
+	// Callback when downloading fails
+	let onError = function(err, response) {
+		if (tries < 10) {
+			let time =  tries * 2000;
+			logger.log("info", "Retrying download %s in %s", key, time);
+			setTimeout(function() { downloadObject(game, typeId, objectId, tries); }, time);
+		} else {
+			logger.warn("Stopped download %s: Too many retries", key);
+			
+			// Save missing keyframe in game & record stats
+			if (typeId == 1) {
+				game.keyframes[objectId] = false;
+			} else {
+				game.chunks[objectId] = false;
+			}
+			
+			// Decrease download counter
+			game.running--;
+			if (game.running < 0) {
+				logger.error("Game %s has negative downloads running", game.key);
+				game.running = 0;
+			}
+		}
+	};
+
+	// Download game object from spectator endpoint
+	let req = request.get(url, { timeout: 10000 });
+	
+	// Response from server event
+	req.on("response", function(response) {				
+		if (response.statusCode != 200) {
+			logger.warn("Could not download %s: Response %s", key, response.statusCode);
+			onError(null, response);
+			return;
+		}
+
+		let length = Number(response.headers["content-length"]);
+
+		// Save to file
+		let stream = fs.createWriteStream(dir + key);
+		stream.on("close", function(err) {
+			if (err) {
+				logger.error("Stream error for %s: %s", key, err);
+				return;
+			}
+
+			if (typeId == 1) {
+				game.keyframes[objectId] = length;
+			} else {
+				game.chunks[objectId] = length;
+			}
+			
+			// Decrease download counter
+			game.running--;
+			if (game.running < 0) {
+				logger.error("Game %s has negative downloads running", game.key);
+				game.running = 0;
+			}
+			
+			logger.log("debug", "Downloaded %s", key);
+		});
+		req.pipe(stream);
+	});
+
+	// Error event
+	req.on("error", function(err) {
+		req.abort();
+		logger.warn("Could not download %s: %s", key, JSON.stringify(err));
+		onError(err, null);
+	});
+};
+
+let finishGame = function(game) {
+	logger.log("debug", "Creating replay file for %s", game.key);
+
+	// Count total keyframes and chunks
+	let dataLength = 0;
+	let totalKeyframes = 0;
+	for (let i = 1; i <= game.newestKeyframeId; i++) {
+		if (game.keyframes[i]) {
+			dataLength += game.keyframes[i];
+			totalKeyframes++;
+		}
+	}
+	let totalChunks = 0;
+	for (let i = 1; i <= game.newestChunkId; i++) {
+		if (game.chunks[i]) {
+			dataLength += game.chunks[i];
+			totalChunks++;
+		}
+	}
+	let complete = totalKeyframes == game.newestKeyframeId && totalChunks == game.newestChunkId ? 1 : 0;
+	
+	// Create a replay file	
+	let c = 0;
+	let keyLen = Buffer.byteLength(game.enc, "base64");
+	let buff = new Buffer(18 + keyLen);
+	
+	// Splits gameId into low and high 32bit numbers
+	let high = Math.floor(game.gameId / 4294967296);             // right shift by 32 bits (js doesn't support ">> 32")
+	let low = game.gameId - high * 4294967296;                   // extract lower 32 bits
+	
+	// File version
+	buff.writeUInt8(12, c);                                 c += 1;
+	
+	// Extract bytes for riot version
+	let splits = game.version.split(".");
+	
+	logger.log("debug", "Writing basic game info for %s", game.key);
+	
+	// Basic game info
+	buff.writeUInt8(game.region.id, c);                     c += 1;
+	buff.writeUInt32BE(high, c);                            c += 4;
+	buff.writeUInt32BE(low, c);                             c += 4;
+	buff.writeUInt8(splits[0], c);                          c += 1;
+	buff.writeUInt8(splits[1], c);                          c += 1;
+	buff.writeUInt8(splits[2], c);                          c += 1;
+	buff.writeUInt8(keyLen, c);                             c += 1;
+	buff.write(game.enc, c, keyLen, "base64");              c += keyLen;
+	buff.writeUInt8(complete ? 1 : 0, c);                   c += 1;
+	buff.writeUInt8(game.endStartupChunkId, c);             c += 1;
+	buff.writeUInt8(game.startGameChunkId, c);              c += 1;
+	
+	logger.log("debug", "Writing player info for %s", game.key);
+	
+	// Players
+	buff.writeUInt8(game.players.length, c);                c += 1;
+	for (let i = 0; i < game.players.length; i++) {
+		let p = game.players[i];
+		let len = Buffer.byteLength(p.name, "utf8");
+		let tempBuff = new Buffer(20 + len);
+		let d = 0;
+		
+		tempBuff.writeInt32BE(p.id, d);            d += 4;
+		tempBuff.writeUInt8(len, d);               d += 1;
+		tempBuff.write(p.name, d, len, "utf8");    d += len;
+		tempBuff.writeUInt8(p.teamNr, d);          d += 1;
+		tempBuff.writeUInt8(p.lId, d);	           d += 1;
+		tempBuff.writeUInt8(p.lRank, d);           d += 1;
+		tempBuff.writeInt32BE(p.cId, d);           d += 4;
+		tempBuff.writeInt32BE(p.s1Id, d);          d += 4;
+		tempBuff.writeInt32BE(p.s2Id, d);          d += 4;
+		
+		buff = Buffer.concat([ buff, tempBuff ]);           c += tempBuff.length;
+	}
+	
+	// Extend buffer
+	logger.error(4 + dataLength + (totalKeyframes + totalChunks) * 6);
+	buff = Buffer.concat([ buff, new Buffer(4 + dataLength + (totalKeyframes + totalChunks) * 6) ]);
+
+	logger.log("debug", "Writing keyframes for %s", game.key);
+	
+	// Keyframes
+	buff.writeUInt16BE(totalKeyframes, c);                  c += 2;
+	_.each(game.keyframes, function(keyframe, index) {
+		if (!keyframe)
+			return;
+
+		buff.writeUInt16BE(index, c);                       c += 2;
+		buff.writeInt32BE(keyframe, c);                     c += 4;
+
+		fs.readFileSync(dir + game.region.id + "-" + game.gameId + "-K-" + index).copy(buff, c);
+
+		c += keyframe;
+	});
+	
+	logger.log("debug", "Writing chunks for %s", game.key);
+	
+	// Chunks
+	buff.writeUInt16BE(totalChunks, c);                     c += 2;
+	_.each(game.chunks, function(chunk, index) {
+		if (!chunk)
+			return;
+
+		buff.writeUInt16BE(index, c);                       c += 2;
+		buff.writeInt32BE(chunk, c);                        c += 4;
+
+		fs.readFileSync(dir + game.region.id + "-" + game.gameId + "-C-" + index).copy(buff, c);
+
+		c += chunk;
+	});
+
+	fs.writeFileSync("replays/" + game.region.id + "-" + game.gameId + ".aof", buff);
+	logger.info("Done");
+};

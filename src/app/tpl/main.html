@@ -12,6 +12,12 @@
                 {{ lolClientFound ? replayVersionMatch ? "LoL Client found: " : "Replay version does not match LoL version. You may not be able to play this replay. LoL Client: " : "No LoL Client found!" }} {{ lolClientVersionShort }}
             </md-tooltip>
         </md-button>
+        <md-button class="md-icon-button" style="float:right;">
+            <md-icon id="clientRunning" ng-class="lolRunning ? 'client-found-true' : 'client-found-warning'">{{ lolRunning ? 'check_circle' : 'warning' }}</md-icon>
+            <md-tooltip md-direction="left">
+                {{ lolRunning ? "League of Legends is running" : "Waiting..." }}
+            </md-tooltip>
+        </md-button>
         <md-button class="aof md-raised md-primary md-button md-default-theme" style="top: 3px;" ng-click="openFile()">Open file...</md-button>
         <div class="content" ng-show="replay" style="padding: 10px;">
             <div style="float:right;">v{{ replay.riotVersion }}</div>

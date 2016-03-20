@@ -24,6 +24,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         $scope.lolClientVersionShort = "";
         $scope.aofClientInfo = {};
         $scope.replayVersionMatch = true;
+        $scope.lolRunning = false;
         
         $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" }, { id: 3, name: "Send current log to aof.gg" } ];
         
@@ -148,6 +149,10 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
             $scope.showDialog(obj.title, obj.content);
         });
         
+        ipc.on("gameSwitch", function(event, obj) {
+        	$scope.lolRunning = obj;
+        });
+
         ipc.send("ready");
     }
 ]);

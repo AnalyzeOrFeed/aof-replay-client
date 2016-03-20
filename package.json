@@ -11,9 +11,9 @@
   "author": "Analyze Or Feed",
   "license": "MIT",
   "devDependencies": {
-    "electron-prebuilt": "^0.35.2",
-    "gulp": "^3.9.0",
-    "gulp-electron": "0.0.9",
+    "electron-prebuilt": "^0.36.11",
+    "gulp": "^3.9.1",
+    "gulp-electron": "^0.0.10",
     "gulp-util": "^3.0.7"
   }
 }
