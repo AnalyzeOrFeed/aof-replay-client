@@ -13,7 +13,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 }
             }
         };
-        
+
         $scope.ddragonBase = "http://ddragon.leagueoflegends.com/cdn/";
         $scope.ddragonVersion = "6.2.1/";
         $scope.loading = true;
@@ -24,34 +24,35 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         $scope.lolClientVersionShort = "";
         $scope.aofClientInfo = {};
         $scope.replayVersionMatch = true;
-        
+        $scope.lolRunning = false;
+
         $scope.settings = [ { id: 1, name: "Select LoL Client" }, { id: 2, name: "Client info" }, { id: 3, name: "Send current log to aof.gg" } ];
-        
+
         $scope.showAofClientInfo = function(event) {
             var updateText = "";
             if ($scope.aofClientInfo.newVersion) {
                 updateText = "<br /><br /><strong>New Version avaliable (" + $scope.aofClientInfo.newVersion + ")</strong><br />" + $scope.aofClientInfo.msg;
             }
-            
+
             $scope.showDialog("Client info", 'v' + $scope.aofClientInfo.currVersion + updateText, event);
         };
         $scope.showDialog = function(title, content, event) {
             $mdDialog.show({
-                    templateUrl: 'app/tpl/dialog-alert.html',
-                    controller: AlertController
-                });
+                templateUrl: 'app/tpl/dialog-alert.html',
+                controller: AlertController
+            });
 
-                $myScope = $scope;
+            $myScope = $scope;
             function AlertController($scope, $mdDialog) {
-              $scope.title = title;
-              $scope.message = content;
-              $scope.openLogs = function() {
-                  $mdDialog.cancel();
-                  $myScope.showSendLogs();
-              };
-              $scope.cancel = function() {
-                  $mdDialog.cancel();
-              };
+                $scope.title = title;
+                $scope.message = content;
+                $scope.openLogs = function() {
+                    $mdDialog.cancel();
+                    $myScope.showSendLogs();
+                };
+                $scope.cancel = function() {
+                    $mdDialog.cancel();
+                };
             }
         };
 
@@ -62,7 +63,7 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 })
                 .then(function(data) {
                     if (data) {
-                      $scope.sendLogs(data);
+                        $scope.sendLogs(data);
                     };
                 });
 
@@ -94,32 +95,35 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
         $scope.sendLogs = function(data) {
             ipc.send("sendLogs", data);
         };
-        
+
         $scope.openFile = function() {
             ipc.send("openReplay");
         };
-        
+
         $scope.selectClient = function() {
             ipc.send("selectClient");
         };
-        
+
         $scope.playReplay = function() {
             ipc.send("play");
         };
-        
+
         ipc.on("loading", function(event, obj) {
+            $scope.loading = obj.loading;
+            $scope.msg = obj.msg;
+            /*
             $scope.$apply(function() {
                 $scope.loading = obj.loading;
                 $scope.msg = obj.msg;
-            });
+            });*/
         });
-        
+
         ipc.on("aofUpdate", function(event, obj) {
             $scope.$apply(function() {
                 $scope.aofClientInfo = obj;
             });
         });
-        
+
         ipc.on("staticData", function(event, obj) {
             $scope.ddragonVersion = obj.version;
         });
@@ -136,18 +140,22 @@ app.controller('MainController', ['$scope', '$rootScope', '$mdDialog',
                 matchClientVersionToReplayVersion();
             });
         });
-        
+
         ipc.on("parsedReplayFile", function(event, obj) {
             $scope.$apply(function() {
                 $scope.replay = obj;
                 matchClientVersionToReplayVersion();
             });
         });
-        
+
         ipc.on("error", function(event, obj) {
             $scope.showDialog(obj.title, obj.content);
         });
-        
+
+        ipc.on("gameSwitch", function(event, obj) {
+            $scope.lolRunning = obj;
+        });
+
         ipc.send("ready");
     }
 ]);

@@ -9,7 +9,6 @@ let lastChunkInfo = "{\"chunkId\":$cid,\"availableSince\":30000,\"nextAvailableC
 let replay = {};
 let data = {};
 let webHost = "127.0.0.1";
-let webPort;
 
 let server;
 
@@ -82,6 +81,6 @@ module.exports = function(extLogger) {
         },
         resetReplay: function() {
             chunkId = 1;
-        },
+        }
     };
 };
