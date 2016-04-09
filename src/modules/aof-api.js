@@ -4,7 +4,7 @@ let fs      = require("fs");
 let request = require("request");
 let _       = require("underscore");
 let logger;
-let token = "f7966ba3034154a004e1f8db0dac44aaf59b196bc69c712b67a23ebe5011eb4f";
+let token = "???";
 
 
 module.exports = function(extLogger) {
