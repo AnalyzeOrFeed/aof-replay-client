@@ -82,8 +82,8 @@ function checkPath(callback) {
 					errorCallback(err);
 				} else {
 					logger.info("Complete league path is " + fullPath);
-					checkVersion(function(){
-						callback(true);
+					checkVersion(function(valid) {
+						callback(valid);
 					});
 				}
 			});
@@ -126,38 +126,44 @@ function find(hintPath, callback) {
 		leaguePath = hintPath;
 		checkPath(function(found) {
 			if (!found)
-				find(false, callback);
+				find(null, callback);
 			else
 				callback(true);
 		});
 	} else {
 		if (process.platform == "win32") {
-			// Try finding the key in all the registry locations
 			let possiblePaths = [];
 			let c = 0;
 			let num = _.reduce(regexLocations, function(memo, item) { return memo + item.keys.length; }, 0);
+
+			let cb = function() {
+				c++;
+
+				if (c == num) {
+					if (possiblePaths.length == 0) {
+						callback(false);
+					} else {
+						for (let k = 0; k < possiblePaths.length; k++) {
+							if (leaguePath)
+								break;
+
+							logger.info("Checking possible LoL client @ " + possiblePaths[k]);
+							leaguePath = possiblePaths[k];
+							checkPath(callback);
+						}
+					}
+				}
+			}
+
+			// Try finding the key in all the registry locations
 			for (let i = 0; i < regexLocations.length; i++) {
 				for (let j = 0; j < regexLocations[i].keys.length; j++) {
 					findRegKey(regexLocations[i].hive, regexLocations[i].keys[j], function(path) {
 						if (path && !_.contains(possiblePaths, path)) {
 							possiblePaths.push(path);
 						}
-						c++;
 
-						if (c == num) {
-							if (possiblePaths.length == 0) {
-								callback(false);
-							} else {
-								for (let k = 0; k < possiblePaths.length; k++) {
-									if (leaguePath)
-										break;
-
-									logger.info("Checking possible LoL client @ " + possiblePaths[k]);
-									leaguePath = possiblePaths[k];
-									checkPath(callback);
-								}
-							}
-						}
+						cb();
 					});
 				}
 			}

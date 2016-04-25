@@ -1,0 +1,21 @@
+<md-toolbar id="footer">
+    <div class="md-toolbar-tools">
+        <span class="small-text" ng-show="loggedIn">
+        	{{ recordingStatus }}
+        </span>
+        <span ng-hide="loggedIn">
+            <md-button ng-click="showLogin()">
+                Login
+            </md-button>
+            <span class="small-text" ng-show="recordingStatus">
+                {{ recordingStatus }}
+            </span>
+        </span>
+        <span flex></span>
+        <span ng-show="lastReplay">
+        	<md-button ng-click="openLastReplay()">
+                Open last replay
+            </md-button>
+        </span>
+    </div>
+</md-toolbar>
