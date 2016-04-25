@@ -429,7 +429,7 @@ let checkForLeague = function() {
 		aofApi.checkMe(function(game) {
 			if (!game) {
 				mainWindow.webContents.send("recordingStatus", "Match started, waiting for info...");
-				leagueChecking = true;
+				leagueChecking = false;
 				return;
 			}
 
