@@ -1,51 +1,73 @@
-body {
-    color: #333333;
-    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
-    font-size: 1em;
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.5em;
-    display: inline-block;
-    position: relative;
-    min-height: 100%;
-    width: 100%;
-    margin: 0;
-}
-
-.aof {
-    background-color: #3598db;
-}
-
-.aof.md-button {
-    position: absolute;
-    left: 3px;
-}
-
-.content {
-    margin-top: 50px;
-}
-
-.client-found-true {
+.ok {
     color: green;
 }
 
-.client-found-warning {
+.warn {
     color: orange;
 }
 
-.client-found-false {
+.error {
     color: red;
 }
 
-.title {
-    font-size: 1.3em;
+#loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 200px;
 }
 
-.load-file {
+#main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 80px;
+    padding: 0 15px;
+    height: 350px;
+}
 
+#replay-info {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#replay {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#footer {
+    position: fixed;
+    bottom: 0px;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 230px;
+}
+
+.open-replay {
+    position: fixed;
+    left: 5px;
+    top: 55px;
 }
 
 .play-replay {
+    position: fixed;
+    left: 5px;
+    bottom: 55px;
+}
 
+.info-icon {
+    position: fixed;
+    right: 5px;
+    top: 55px;
 }
 
 .spell1 {

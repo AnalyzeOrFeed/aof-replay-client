@@ -11,24 +11,85 @@ let winston       = require("winston");
 
 let ddragonBase    = "http://ddragon.leagueoflegends.com/cdn/";
 let ddragonVersion = "6.2.1/";
+let constUrl       = "observer-mode/rest/consumer/";
 let replay         = null;
 let mainWindow     = null;
 let settings       = {};
 let staticData     = {
-	extended: false,
-	regions: [
-		{"Id":5,"Name":"Brazil","ShortName":"BR"},
-		{"Id":2,"Name":"Europe Nordic & East","ShortName":"EUNE"},
-		{"Id":1,"Name":"Europe West","ShortName":"EUW"},
-		{"Id":6,"Name":"Korea","ShortName":"KR"},
-		{"Id":4,"Name":"Latin America North","ShortName":"LAN"},
-		{"Id":8,"Name":"Latin America South","ShortName":"LAS"},
-		{"Id":3,"Name":"North America","ShortName":"NA"},
-		{"Id":7,"Name":"Oceania","ShortName":"OCE"},
-		{"Id":11,"Name":"Public Beta Environment","ShortName":"PBE"},
-		{"Id":9,"Name":"Russia","ShortName":"RU"},
-		{"Id":10,"Name":"Turkey","ShortName":"TR"}
-	]
+	"extended": false,
+	"regions": [{
+		"id": 1,
+		"name": "Europe West",
+		"shortName": "EUW",
+		"spectatorUrl": "http://spectator.euw1.lol.riotgames.com/",
+		"spectatorRegion": "EUW1"
+	}, {
+		"id": 2,
+		"name": "Europe Nordic & East",
+		"shortName": "EUNE",
+		"spectatorUrl": "http://spectator.eu.lol.riotgames.com:8088/",
+		"spectatorRegion": "EUN1"
+	}, {
+		"id": 3,
+		"name": "North America",
+		"shortName": "NA",
+		"spectatorUrl": "http://spectator.na.lol.riotgames.com/",
+		"spectatorRegion": "NA1"
+	}, {
+		"id": 4,
+		"name": "Latin America North",
+		"shortName": "LAN",
+		"spectatorUrl": "http://spectator.la1.lol.riotgames.com/",
+		"spectatorRegion": "LA1"
+	}, {
+		"id": 5,
+		"name": "Brazil",
+		"shortName": "BR",
+		"spectatorUrl": "http://spectator.br.lol.riotgames.com/",
+		"spectatorRegion": "BR1"
+	}, {
+		"id": 6,
+		"name": "Korea",
+		"shortName": "KR",
+		"spectatorUrl": "http://spectator.kr.lol.riotgames.com/",
+		"spectatorRegion": "KR"
+	}, {
+		"id": 7,
+		"name": "Oceania",
+		"shortName": "OCE",
+		"spectatorUrl": "http://spectator.oc1.lol.riotgames.com/",
+		"spectatorRegion": "OC1"
+	}, {
+		"id": 8,
+		"name": "Latin America South",
+		"shortName": "LAS",
+		"spectatorUrl": "http://spectator.la2.lol.riotgames.com/",
+		"spectatorRegion": "LA2"
+	}, {
+		"id": 9,
+		"name": "Russia",
+		"shortName": "RU",
+		"spectatorUrl": "http://spectator.ru.lol.riotgames.com/",
+		"spectatorRegion": "RU"
+	}, {
+		"id": 10,
+		"name": "Turkey",
+		"shortName": "TR",
+		"spectatorUrl": "http://spectator.tr.lol.riotgames.com/",
+		"spectatorRegion": "TR1"
+	}, {
+		"id": 11,
+		"name": "Public Beta Environment",
+		"shortName": "PBE",
+		"spectatorUrl": "http://spectator.pbe1.lol.riotgames.com:8080/",
+		"spectatorRegion": "PBE1"
+	}, {
+		"id": 12,
+		"name": "Japan",
+		"shortName": "JP",
+		"spectatorUrl": "http://spectator.jp1.lol.riotgames.com/",
+		"spectatorRegion": "JP1"
+	}]
 };
 
 // Create folder for log files
@@ -47,9 +108,10 @@ logger.add(winston.transports.File, {
 	"level": "debug"
 });
 
-fs.mkdir("cache");
-fs.mkdir("replays");
-
+if (!fs.existsSync("cache"))
+	fs.mkdir("cache");
+if (!fs.existsSync("replays"))
+	fs.mkdir("replays");
 
 // Add global error handlers
 process.on("uncaughtException", function (error) {
@@ -59,11 +121,9 @@ process.on("error", function (error) {
 	logger.error("App Error: " + error);
 });
 
-
 // Log operating system
 logger.info("We are running on " + process.platform);
 logger.info("Application data path: " + app.getPath("userCache"));
-
 
 // Load our modules
 let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
@@ -71,14 +131,12 @@ let replayServer = require(__dirname + "/modules/replay-server.js")(logger);
 let lolClient = require(__dirname + "/modules/lol-client.js")(logger);
 let aofApi = require(__dirname + "/modules/aof-api.js")(logger);
 
-
 // Quit when all windows are closed.
 app.on("window-all-closed", function() {
 	if (process.platform != "darwin") {
 		app.quit();
 	}
 });
-
 
 // User settings
 function loadUserSettings(callback) {
@@ -96,7 +154,6 @@ function saveUserSettings() {
 	settings.lolClientPath = lolClient.leaguePath();
 	fs.writeFileSync(app.getPath("userCache") + "/settings", JSON.stringify(settings, null, 2));
 }
-
 
 // Check for updates
 function checkForUpdates(callback) {
@@ -124,7 +181,6 @@ function checkForUpdates(callback) {
 		callback();
 	});
 }
-
 
 // Get static data from api
 function getStaticData(callback) {
@@ -170,7 +226,6 @@ function getStaticData(callback) {
 	});
 }
 
-
 // Extend the metadata of a replay with additional information
 function extendReplayMetadata(meta) {
 	meta.region = _.find(staticData.regions, function(region) { return region.id == meta.regionId }).shortName;
@@ -201,7 +256,6 @@ function extendReplayMetadata(meta) {
 	return meta;
 }
 
-
 // Called when the renderer is ready to display things
 ipc.on("ready", function(event, args) {
 	
@@ -218,13 +272,12 @@ ipc.on("ready", function(event, args) {
 
 				mainWindow.webContents.send("loading", { loading: true, msg: "Searching for league client..." });
 				lolClient.find(settings.lolClientPath, function(found) {
-					
 					mainWindow.webContents.send("loading", { loading: true, msg: "Starting local replay server..." });
 					replayServer.startServer();
-					
+
 					mainWindow.webContents.send("clientInfo", { found: lolClient.isFound(), version: lolClient.version() });
 					mainWindow.webContents.send("loading", { loading: false, msg: "" });
-					
+
 					saveUserSettings();
 				});
 			});
@@ -232,12 +285,11 @@ ipc.on("ready", function(event, args) {
 	});
 });
 
-
 // Called when the user wants to select the league client manually
 ipc.on("selectClient", function(event, args) {
 	logger.info("ipc: Select client");
 	
-	var files = dialog.showOpenDialog({
+	var files = dialog.showOpenDialog(mainWindow, {
 		filters: [{ name: 'League of Legends Client', extensions: ['app', 'exe'] }],
 		properties: [ "openFile" ]
 	});
@@ -250,29 +302,39 @@ ipc.on("selectClient", function(event, args) {
 	}
 });
 
-
 // Called when the user wants to open a replay
 ipc.on("openReplay", function(event, args) {
 	logger.info("ipc: Open replay");
 	
-	let files = dialog.showOpenDialog({
-		filters: [{ name: 'Replay File', extensions: ['aof'] }],
-		properties: [ "openFile" ]
-	});
+	let files = [];
+	if (!args) {
+		files = dialog.showOpenDialog(mainWindow, {
+			filters: [{ name: 'Replay File', extensions: ['aof'] }],
+			properties: [ "openFile" ]
+		});
+	} else {
+		files.push(args);
+	}
 	
 	if (files && files.length == 1) {
 		aofParser.parse(files[0], function(err, replayMetadata, replayData) {
 			if (err) {
 				logger.warn("Could not parse replay file " + files[0] + ": " + err);
+				event.sender.send("parsedReplayFile", { err: err.toString() });
 			} else {
 				replay = extendReplayMetadata(replayMetadata);
-				event.sender.send("parsedReplayFile", replay);
+				event.sender.send("parsedReplayFile", { replay: replay });
 				replayServer.loadReplay(replay, replayData);
 			}
 		});
 	}
 });
 
+ipc.on("login", function(event, args) {
+	aofApi.login(args.email, args.password, function(success) {
+		if (success) event.sender.send("login");
+	});
+});
 
 // Called when the user wants to play a replay
 let playingReplay = false;
@@ -297,7 +359,7 @@ ipc.on("play", function(event, args) {
 	});
 });
 
-
+// Called when the user wants to send the log files to the aof server
 ipc.on("sendLogs", function(event, data) {
 	logger.info("ipc: Send logs");
 	
@@ -333,10 +395,16 @@ ipc.on("sendLogs", function(event, data) {
 	});
 });
 
-let leagueRunning = false;
+// Checks to see if the LoL client is running
+var leagueRecording = false;
 let checkForLeague = function() {
-	if (playingReplay) return;
-	
+	if (leagueRecording) return;
+
+	if (playingReplay) {
+		mainWindow.webContents.send("recordingStatus", "Watching a replay...");
+		return;
+	}
+
 	var exec = require('child_process').exec;
 	exec('tasklist', function(err, stdout, stderr) {
 		let splits = stdout.split("\n");
@@ -344,28 +412,30 @@ let checkForLeague = function() {
 			return proc.indexOf("League of Legends") === 0 && proc.indexOf("Console") > 0;
 		});
 
-		if (proc && !leagueRunning) {
-			aofApi.checkMe(function(game) {
-				if (game) {
-					logger.info("We're ingame!");
-					game.state = 1;
-					game.region = { id: 1, url: "http://spectator.euw1.lol.riotgames.com/", spec: "EUW1" };
-					game.metaErrors = 0;
-					game.key = game.regionId + "-" + game.gameId;
-					game.oldKeyframeId = game.newestKeyframeId = 0;
-					game.oldChunkId = game.newestChunkId = 0;
-					game.chunks = [ null ];
-					game.keyframes = [ null ];
-					game.running = 0;
-					updateGame(game);
-				} else {
-					logger.info("False alarm");
-				}
-			});
+		if (!proc) {
+			mainWindow.webContents.send("recordingStatus", "Waiting for a match...");
+			return;
 		}
 
-		leagueRunning = proc ? true : false;
-		mainWindow.webContents.send("gameSwitch", leagueRunning);
+		aofApi.checkMe(function(game) {
+			if (!game) return;
+
+			game.state = 1;
+			game.region = _.find(staticData.regions, function(region) { return region.id == game.regionId; });
+			game.metaErrors = 0;
+			game.key = game.regionId + "-" + game.gameId;
+			game.oldKeyframeId = game.newestKeyframeId = 0;
+			game.oldChunkId = game.newestChunkId = 0;
+			game.chunks = [ null ];
+			game.keyframes = [ null ];
+			game.running = 0;
+			game.isWaiting = 0;
+
+			leagueRecording = true;
+			updateGame(game);
+
+			mainWindow.webContents.send("recordingStatus", "Recording...");
+		});
 	});
 };
 
@@ -373,9 +443,10 @@ let checkForLeague = function() {
 app.on("ready", function() {
 	mainWindow = new BrowserWindow({
 		width: 800,
-		height: 600,
+		height: 630,
 		toolbar: false,
-		"auto-hide-menu-bar": true
+		"auto-hide-menu-bar": true,
+		resizable: false
 	});
 	
 	// Open the DevTools.
@@ -383,20 +454,39 @@ app.on("ready", function() {
 	
 	// Load the index.html of the app.
 	mainWindow.loadURL("file://" + __dirname + "/index.html");
-	
+
+	// Before closing
+	mainWindow.on("close", function(e) {
+		if (leagueRecording) {
+			let res = dialog.showMessageBox(mainWindow, {
+				type: "error",
+				title: "Recording in progress",
+				message: "The AoF Client is currently recording a game, if you quit now the replay of that game might be incomplete. " + 
+					"Do you really want to exit?",
+				buttons: [ "Keep recording", "Close anyways" ],
+				noLink: true
+			});
+			if (res === 0) e.preventDefault();
+		}
+	});
+
 	// When window is closed
 	mainWindow.on("closed", function() {
 		mainWindow = null;
 	});
 
-	setInterval(checkForLeague, 1000);
+	setInterval(checkForLeague, 2000);
 });
 
+// Updates the status of a game that is being recorded
 let updateGame = function(game) {
 	let retry = function(time) {
 		// Check what to do next
 		if (game.metaErrors > 10) {
 			logger.warn("Canceled game %s", game.key);
+
+			leagueRecording = false;
+			mainWindow.webContents.send("recordingStatus", "Recording canceled!");
 		} else {
 			// Wait for timeout for next check
 			setTimeout(function() {
@@ -406,7 +496,7 @@ let updateGame = function(game) {
 	};
 
 	if (game.state == 1) {
-		let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getGameMetaData/" + game.region.spec + "/" + game.gameId + "/0/token");
+		let url = encodeURI(game.region.spectatorUrl + constUrl + "getGameMetaData/" + game.region.spectatorRegion + "/" + game.gameId + "/0/token");
 		request.get(url, options, function(err, response, metaData) {
 			if (err || response.statusCode != 200) {
 				logger.warn("GameMetaData error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
@@ -427,9 +517,9 @@ let updateGame = function(game) {
 			}
 		});
 	} else if (game.state == 2) {
-		let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getLastChunkInfo/" + game.region.spec + "/" + game.gameId + "/0/token");
+		let url = encodeURI(game.region.spectatorUrl + constUrl + "getLastChunkInfo/" + game.region.spectatorRegion + "/" + game.gameId + "/0/token");
 		request.get(url, options, function(err, response, chunkInfo) {
-			if (err || response.statusCode != 200) {
+			if (err || !response || response.statusCode != 200) {
 				logger.warn("LastChunkInfo error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
 				game.metaErrors++;
 				retry(10000);
@@ -469,117 +559,100 @@ let updateGame = function(game) {
 				logger.warn("Game %s continues after waiting 10 times", game.key);
 			}
 			
-			// Get meta data for endgame stats
-			let url = encodeURI(game.region.url + "observer-mode/rest/consumer/getGameMetaData/" + game.region.spec + "/" + game.gameId + "/0/token");
+			// Get meta data
+			let url = encodeURI(game.region.spectatorUrl + constUrl + "getGameMetaData/" + game.region.spectatorRegion + "/" + game.gameId + "/0/token");
 			request.get(url, options, function(err, response, metaData) {
 				if (err || response.statusCode != 200) {
 					logger.warn("GameMetaData error: %s, %s for %s", err, response ? response.statusCode : null, game.key);
 					game.metaErrors++;
 					retry(10000);
+					return;
+				}
+
+				if (metaData.gameEnded) {
+					logger.info("Game %s is done", game.key);
+					
+					game.state = 3;
+					
+					finishGame(game);
 				} else {
-					if (metaData.gameEnded) {
-						logger.info("Game %s is done", game.key);
-						
-						game.state = 3;
-						
-						finishGame(game);
-					} else {
-						logger.warn("Last available chunk but game %s isn't done", game.key);
-						retry(10000);
-					}
+					logger.warn("Last available chunk but game %s isn't done", game.key);
+					retry(10000);
 				}
 			});
 		});
-	} else if (game.state == 3) {
-		logger.warn("Game %s is alredy done", game.key);
-	} else {
-		logger.warn("Game %s is already done and uploaded", game.key);
 	}
 };
 
+// Downloads a keyframe/chunk for a recording game
 let dir = "cache/";
 let options = { timeout: 10000, json: true };
 let downloadObject = function(game, typeId, objectId, tries) {
 	let start = process.hrtime();
 	let key = game.region.id + "-" + game.gameId + "-" + (typeId === 1 ? "K" : "C") + "-" + objectId;
-	let url = game.region.url + "observer-mode/rest/consumer/" + (typeId === 1 ? "getKeyFrame" : "getGameDataChunk") + "/" + 
-		game.region.spec + "/" + game.gameId + "/" + objectId + "/token?rito=" + (new Date()).getTime();
+	let url = game.region.spectatorUrl + constUrl + (typeId === 1 ? "getKeyFrame" : "getGameDataChunk") + "/" + 
+		game.region.spectatorRegion + "/" + game.gameId + "/" + objectId + "/token?rito=" + (new Date()).getTime();
 	
 	tries++;
 	logger.log("info", "Downloading %s try #%s", key, tries);
-	
-	// Callback when downloading fails
-	let onError = function(err, response) {
-		if (tries < 10) {
-			let time =  tries * 2000;
-			logger.log("info", "Retrying download %s in %s", key, time);
-			setTimeout(function() { downloadObject(game, typeId, objectId, tries); }, time);
-		} else {
-			logger.warn("Stopped download %s: Too many retries", key);
-			
-			// Save missing keyframe in game & record stats
-			if (typeId == 1) {
-				game.keyframes[objectId] = false;
-			} else {
-				game.chunks[objectId] = false;
-			}
-			
-			// Decrease download counter
-			game.running--;
-			if (game.running < 0) {
-				logger.error("Game %s has negative downloads running", game.key);
-				game.running = 0;
-			}
-		}
-	};
 
 	// Download game object from spectator endpoint
-	let req = request.get(url, { timeout: 10000 });
-	
-	// Response from server event
-	req.on("response", function(response) {				
-		if (response.statusCode != 200) {
-			logger.warn("Could not download %s: Response %s", key, response.statusCode);
-			onError(null, response);
+	let req = request.get(url, { timeout: 10000 }, function(err, response, data) {
+		if (err || response.statusCode != 200) {
+			logger.warn("Could not download %s: Error: %s, Response %s", key, err, response.statusCode);
+			if (tries < 10) {
+				let time =  tries * 2000;
+				logger.log("info", "Retrying download %s in %s", key, time);
+				setTimeout(function() { downloadObject(game, typeId, objectId, tries); }, time);
+			} else {
+				logger.warn("Stopped download %s: Too many retries", key);
+				
+				// Save missing keyframe in game & record stats
+				if (typeId == 1) {
+					game.keyframes[objectId] = false;
+				} else {
+					game.chunks[objectId] = false;
+				}
+
+				game.running--;
+				if (game.running < 0) {
+					logger.error("Game %s has negative downloads running", game.key);
+					game.running = 0;
+				}
+			}
 			return;
 		}
 
-		let length = Number(response.headers["content-length"]);
+		let length = parseInt(response.headers["content-length"]);
 
 		// Save to file
-		let stream = fs.createWriteStream(dir + key);
-		stream.on("close", function(err) {
+		fs.writeFile(dir + key, data, function(err) {
 			if (err) {
-				logger.error("Stream error for %s: %s", key, err);
-				return;
+				logger.error(err);
+
+				if (typeId == 1) {
+					game.keyframes[objectId] = false;
+				} else {
+					game.chunks[objectId] = false;
+				}
+			} else {
+				if (typeId == 1) {
+					game.keyframes[objectId] = length;
+				} else {
+					game.chunks[objectId] = length;
+				}
 			}
 
-			if (typeId == 1) {
-				game.keyframes[objectId] = length;
-			} else {
-				game.chunks[objectId] = length;
-			}
-			
-			// Decrease download counter
 			game.running--;
 			if (game.running < 0) {
 				logger.error("Game %s has negative downloads running", game.key);
 				game.running = 0;
 			}
-			
-			logger.log("debug", "Downloaded %s", key);
 		});
-		req.pipe(stream);
-	});
-
-	// Error event
-	req.on("error", function(err) {
-		req.abort();
-		logger.warn("Could not download %s: %s", key, JSON.stringify(err));
-		onError(err, null);
 	});
 };
 
+// Completes the recording process of a game
 let finishGame = function(game) {
 	logger.log("debug", "Creating replay file for %s", game.key);
 
@@ -655,7 +728,6 @@ let finishGame = function(game) {
 	}
 	
 	// Extend buffer
-	logger.error(4 + dataLength + (totalKeyframes + totalChunks) * 6);
 	buff = Buffer.concat([ buff, new Buffer(4 + dataLength + (totalKeyframes + totalChunks) * 6) ]);
 
 	logger.log("debug", "Writing keyframes for %s", game.key);
@@ -690,6 +762,10 @@ let finishGame = function(game) {
 		c += chunk;
 	});
 
-	fs.writeFileSync("replays/" + game.region.id + "-" + game.gameId + ".aof", buff);
+	fs.writeFileSync("replays/" + game.region.shortName + "-" + game.gameId + ".aof", buff);
 	logger.info("Done");
+
+	leagueRecording = false;
+	mainWindow.webContents.send("recordingStatus", "Recording complete");
+	mainWindow.webContents.send("lastReplay", "replays/" + game.region.shortName + "-" + game.gameId + ".aof");
 };

@@ -22,8 +22,10 @@
   <body ng-cloak ng-controller="MainController">
 	  <div ng-include="'app/tpl/header.html'"></div>
 
-	  <div layout="column" id="content" flex>
-		  <ng-view layout="column" class="md-paddding" flex></ng-view>
+	  <div id="content" flex>
+		  <ng-view class="md-paddding"></ng-view>
 	  </div>
+
+	  <div ng-include="'app/tpl/footer.html'"></div>
   </body>
 </html>
