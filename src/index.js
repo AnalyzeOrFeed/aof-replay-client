@@ -405,13 +405,7 @@ let checkForLeague = function() {
 		return;
 	}
 
-	var exec = require('child_process').exec;
-	exec('tasklist', function(err, stdout, stderr) {
-		let splits = stdout.split("\n");
-		let proc = _.find(splits, function(proc) {
-			return proc.indexOf("League of Legends") === 0 && proc.indexOf("Console") > 0;
-		});
-
+	var cb = function(proc) {
 		if (!proc) {
 			mainWindow.webContents.send("recordingStatus", "Waiting for a match...");
 			return;
@@ -436,7 +430,29 @@ let checkForLeague = function() {
 
 			mainWindow.webContents.send("recordingStatus", "Recording...");
 		});
-	});
+	};
+
+	var exec = require('child_process').exec;
+	
+	if (process.platform == "win32") {
+		exec('tasklist', function(err, stdout, stderr) {
+			let splits = stdout.split("\n");
+			let proc = _.find(splits, function(proc) {
+				return proc.indexOf("League of Legends") === 0 && proc.indexOf("Console") > 0;
+			});
+
+			cb(proc);
+		});
+	} else {
+		exec('ps -ax | grep -i "LoL/RADS/solutions"', function (err, stdout, stderr) {
+			let splits = stdout.split("\n");
+			let proc = _.find(splits, function (proc) {
+				return proc.indexOf("deploy/bin/LolClient") >= 0;
+			});
+
+			cb(proc);
+		});
+	}
 };
 
 // Setup windows
