@@ -633,7 +633,7 @@ let downloadObject = function(game, typeId, objectId, tries) {
 	logger.log("info", "Downloading %s try #%s", key, tries);
 
 	// Download game object from spectator endpoint
-	request.get(url, { timeout: 10000 }, function(err, response, data) {
+	request(url, { encoding: null, timeout: 10000 }, function(err, response, data) {
 		if (err || response.statusCode != 200) {
 			logger.warn("Could not download %s: Error: %s, Response %s", key, err, response.statusCode);
 			if (tries < 10) {
@@ -659,8 +659,6 @@ let downloadObject = function(game, typeId, objectId, tries) {
 			return;
 		}
 
-		let length = parseInt(response.headers["content-length"]);
-
 		// Save to file
 		fs.writeFile(dir + key, data, function(err) {
 			if (err) {
@@ -673,9 +671,9 @@ let downloadObject = function(game, typeId, objectId, tries) {
 				}
 			} else {
 				if (typeId == 1) {
-					game.keyframes[objectId] = length;
+					game.keyframes[objectId] = data.length;
 				} else {
-					game.chunks[objectId] = length;
+					game.chunks[objectId] = data.length;
 				}
 			}
 
