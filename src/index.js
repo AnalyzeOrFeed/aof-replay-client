@@ -403,9 +403,15 @@ let checkForLeague = function() {
 	if (leagueChecking) return;
 	leagueChecking = true;
 
-	if (leagueRecording) return;
+	if (leagueRecording) {
+		leagueChecking = false
+		return;
+	}
 
-	if (!aofApi.loggedIn()) return;
+	if (!aofApi.loggedIn()) {
+		leagueChecking = false;
+		return;
+	}
 
 	if (playingReplay) {
 		mainWindow.webContents.send("recordingStatus", "Watching a replay...");
