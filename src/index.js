@@ -397,25 +397,35 @@ ipc.on("sendLogs", function(event, data) {
 });
 
 // Checks to see if the LoL client is running
+var leagueChecking = false;
 var leagueRecording = false;
 let checkForLeague = function() {
+	if (leagueChecking) return;
+	leagueChecking = true;
+
 	if (leagueRecording) return;
 
 	if (!aofApi.loggedIn()) return;
 
 	if (playingReplay) {
 		mainWindow.webContents.send("recordingStatus", "Watching a replay...");
+		leagueChecking = false;
 		return;
 	}
 
 	var cb = function(proc) {
 		if (!proc) {
 			mainWindow.webContents.send("recordingStatus", "Waiting for a match...");
+			leagueChecking = false;
 			return;
 		}
 
 		aofApi.checkMe(function(game) {
-			if (!game) return;
+			if (!game) {
+				mainWindow.webContents.send("recordingStatus", "Match started, waiting for info...");
+				leagueChecking = true;
+				return;
+			}
 
 			game.state = 1;
 			game.region = _.find(staticData.regions, function(region) { return region.id == game.regionId; });
@@ -432,6 +442,7 @@ let checkForLeague = function() {
 			updateGame(game);
 
 			mainWindow.webContents.send("recordingStatus", "Recording...");
+			leagueChecking = false;
 		});
 	};
 
@@ -507,7 +518,7 @@ let updateGame = function(game) {
 			leagueRecording = false;
 			mainWindow.webContents.send("recordingStatus", "Recording canceled!");
 		} else {
-			// Wait for timeout for next check
+			// Wait for timeout until next check
 			setTimeout(function() {
 				updateGame(game);
 			}, time);
@@ -616,7 +627,7 @@ let downloadObject = function(game, typeId, objectId, tries) {
 	logger.log("info", "Downloading %s try #%s", key, tries);
 
 	// Download game object from spectator endpoint
-	let req = request.get(url, { timeout: 10000 }, function(err, response, data) {
+	request.get(url, { timeout: 10000 }, function(err, response, data) {
 		if (err || response.statusCode != 200) {
 			logger.warn("Could not download %s: Error: %s, Response %s", key, err, response.statusCode);
 			if (tries < 10) {
