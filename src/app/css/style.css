@@ -85,3 +85,11 @@
     width: 23px;
     height: 23px;
 }
+
+md-dialog-content {
+    padding: 10px;
+}
+
+.small-text {
+    font-size: 80%;
+}

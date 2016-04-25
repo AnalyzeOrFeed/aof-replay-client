@@ -333,6 +333,7 @@ ipc.on("openReplay", function(event, args) {
 ipc.on("login", function(event, args) {
 	aofApi.login(args.email, args.password, function(success) {
 		if (success) event.sender.send("login");
+		else event.sender.send("recordingStatus", "Invalid email and/or password. Visit aof.gg to create an account.");
 	});
 });
 
@@ -400,6 +401,8 @@ var leagueRecording = false;
 let checkForLeague = function() {
 	if (leagueRecording) return;
 
+	if (!aofApi.loggedIn()) return;
+
 	if (playingReplay) {
 		mainWindow.webContents.send("recordingStatus", "Watching a replay...");
 		return;
@@ -461,7 +464,7 @@ app.on("ready", function() {
 		width: 800,
 		height: 630,
 		toolbar: false,
-		"auto-hide-menu-bar": true,
+		autoHideMenuBar: true,
 		resizable: false
 	});
 	

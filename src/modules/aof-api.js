@@ -6,12 +6,15 @@ let _       = require("underscore");
 let logger;
 
 let baseUrl = "https://api.aof.gg/v2/";
-let token = "";
+let token = null;
 
 
 module.exports = function(extLogger) {
     logger = extLogger;
     return {
+        loggedIn: function() {
+            return token != null;
+        },
         login: function(email, password, callback) {
             request.post(baseUrl + "auth", { json: true, body: { email: email, password: password } }, function(err, response, body) {
                 if (err || !response || response.statusCode != 200) {

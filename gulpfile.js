@@ -18,7 +18,7 @@ gulp.task('package', function() {
             packageJson: packageJson,
             release: './release',
             cache: './cache',
-            version: 'v' + buildPackageJson.devDependencies["electron-prebuilt"].slice(1) ,
+            version: 'v' + buildPackageJson.devDependencies["electron-prebuilt"].slice(1),
             rebuild: false,
             packaging: true,
             asar: true,

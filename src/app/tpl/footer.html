@@ -1,12 +1,15 @@
 <md-toolbar id="footer">
     <div class="md-toolbar-tools">
-        <span ng-show="loggedIn">
+        <span class="small-text" ng-show="loggedIn">
         	{{ recordingStatus }}
         </span>
         <span ng-hide="loggedIn">
             <md-button ng-click="showLogin()">
                 Login
             </md-button>
+            <span class="small-text" ng-show="recordingStatus">
+                {{ recordingStatus }}
+            </span>
         </span>
         <span flex></span>
         <span ng-show="lastReplay">
