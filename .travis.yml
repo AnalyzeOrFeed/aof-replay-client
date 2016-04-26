@@ -19,9 +19,9 @@ deploy:
     secure: FoiDMNJi5TpJEN1lcxaQ4o8P+p3KRv5W41A1Z7mvxmREsgEgZNzHGsEKssBJdchZOexFtQmQW5/KQBr2StgcYYThfyDs5et0G1xVUitRp5/WtJ40LZmvsA895aYOI5ZpyIeGKG1Xaa059kC5bAqgZNyhOaVRT+ulsNroYcgEM6qNU54D7K6bAy5WQKqIqVU6V8FdQxTp+6XHrvJBayY2vBROzSUch02dsI5+2PpWG+RHH6lT/WnDlmtaQwBO1UTNHn+WfJELbXcovY8SkmBuIjNnqkmAWhgcrOMJ1NGELV4L10kNyisx14M+kEsagIg7Le4qDp0nYuz1yKu8qjTfUdF4SCSvSDaCTTcC9IDRgCxpX9FrIgesDbzENQKggzXs/KHUgp1RBvuFQAOTrBX8/ThZ12pLnxDaVnfRgi1xjJzwKOHthu8ZorrcK9KVRZBdSsHqqrLJ6TUa+bjDUJQZn1NHkxFigpv718ki8ynL31qOxeeCjU6anJx+tGxVUWdfHR1SVvGrtaQ3ekXVV1IOVqAkLc8MdueLvZvDOwxniN/rW/HZQdbKEE+VZLT0vA8AJWs00tuJb/S0EJtFJ5lclNCsKToJmUKE3PW6I6EDH8ym4wzOorVBr4yW8Q3BUb5OJQipXs+V5ZfDdmf74INYpEKp9Lu1qA3T/YwmpJfnRFQ=
   skip_cleanup: true
   file:
-    - "release/v0.37.7/aof-replay-client-0.2.2-darwin-x64.zip"
-    - "release/v0.37.7/aof-replay-client-0.2.2-win32-ia32.zip"
-    - "release/v0.37.7/aof-replay-client-0.2.2-win32-x64.zip"
+    - "release/v0.37.7/aof-replay-client-0.2.3-darwin-x64.zip"
+    - "release/v0.37.7/aof-replay-client-0.2.3-win32-ia32.zip"
+    - "release/v0.37.7/aof-replay-client-0.2.3-win32-x64.zip"
   on:
     tags: true
     all_branches: true
