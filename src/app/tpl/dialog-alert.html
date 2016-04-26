@@ -1,27 +1,25 @@
 <md-dialog aria-label="{{ title }}">
-    <form>
-        <md-toolbar>
-            <div class="md-toolbar-tools">
-                <h2>{{ title }}</h2>
-                <span flex></span>
-                <md-button class="md-icon-button" ng-click="cancel()">
-                    <md-icon aria-label="Close dialog">close</md-icon>
-                </md-button>
-            </div>
-        </md-toolbar>
-        <md-dialog-content>
-            <div>
-              <p ng-bind-html="message"></p>
-            </div>
-        </md-dialog-content>
-        <div class="md-actions" layout="row">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>{{ title }}</h2>
             <span flex></span>
-            <md-button ng-click="openLogs()">
-                Open send logs dialog
-            </md-button>
-            <md-button ng-click="cancel()" style="margin-right:20px;" >
-                Got it!
+            <md-button class="md-icon-button" ng-click="cancel()">
+                <md-icon aria-label="Close dialog">close</md-icon>
             </md-button>
         </div>
-    </form>
+    </md-toolbar>
+    <md-dialog-content>
+        <div>
+          <p ng-bind-html="message"></p>
+        </div>
+    </md-dialog-content>
+    <div class="md-actions" layout="row">
+        <span flex></span>
+        <md-button ng-click="openLogs()">
+            Open send logs dialog
+        </md-button>
+        <md-button ng-click="cancel()" style="margin-right:20px;" >
+            Got it!
+        </md-button>
+    </div>
 </md-dialog>
