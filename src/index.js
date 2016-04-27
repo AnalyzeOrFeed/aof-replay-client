@@ -232,7 +232,7 @@ function extendReplayMetadata(meta) {
 		var p = meta.players[i];
 		
 		if (staticData.champions) {
-			let champion = _.find(staticData.champions, { "key": p.championId });
+			let champion = _.find(staticData.champions, { "key": p.championId.toString() });
 			p.champion = { name: champion.name, image: champion.image.full };
 		}
 		
@@ -242,12 +242,12 @@ function extendReplayMetadata(meta) {
 		}
 		
 		if (staticData.summonerSpells) {
-			let d = _.find(staticData.summonerSpells, { "key": p.dId });
+			let d = _.find(staticData.summonerSpells, { "key": p.dId.toString() });
 			p.d = { name: d.name, image: d.image.full };
 		}
 		
 		if (staticData.summonerSpells) {
-			let f = _.find(staticData.summonerSpells, { "key": p.fId });
+			let f = _.find(staticData.summonerSpells, { "key": p.fId.toString() });
 			p.f = { name: f.name, image: f.image.full };
 		}
 	}
