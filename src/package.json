@@ -1,6 +1,6 @@
 {
   "name": "aof-replay-client",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "main": "./index.js",
   "scripts": {
     "start": "cd .. && npm start",
