@@ -27,7 +27,7 @@ module.exports = function(extLogger) {
                 logger.info("Requesting: " + request.url);
                 
                 if (request.url.indexOf("/observer-mode/rest/consumer/version") > -1) {
-                    response.end("1.82.89");
+                    response.end("1.82.102");
                 } else if (request.url.indexOf("/observer-mode/rest/consumer/getGameMetaData/") > -1) {
                     response.end("{\"gameKey\":{\"gameId\":0,\"platformId\":\"aof\"},\"gameServerAddress\":\"\",\"port\":0,\"" +
                         "encryptionKey\":\"\",\"chunkTimeInterval\":30000,\"startTime\":\"???\",\"gameEnded\":true,\"lastChunkId\":1,\"lastKeyFrameId\":1,\"endStartupChunkId\":1,\"" +

@@ -2,7 +2,7 @@
 
 let fs      = require("fs");
 let request = require("request");
-let _       = require("underscore");
+let _       = require("lodash");
 let logger;
 
 let baseUrl = "https://api.aof.gg/v2/";
