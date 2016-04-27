@@ -3,7 +3,7 @@
 let fs = require("fs");
 let winreg = require("winreg");
 let spawn = require("child_process").spawn;
-let _ = require("underscore");
+let _ = require("lodash");
 let domain = require("domain");
 let logger;
 
@@ -159,7 +159,7 @@ function find(hintPath, callback) {
 			for (let i = 0; i < regexLocations.length; i++) {
 				for (let j = 0; j < regexLocations[i].keys.length; j++) {
 					findRegKey(regexLocations[i].hive, regexLocations[i].keys[j], function(path) {
-						if (path && !_.contains(possiblePaths, path)) {
+						if (path && possiblePaths.indexOf(path) === -1) {
 							possiblePaths.push(path);
 						}
 

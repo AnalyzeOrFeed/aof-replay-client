@@ -5,7 +5,8 @@ let request       = require("request");
 let ipc           = require("electron").ipcMain;
 let dialog        = require("electron").dialog;
 let BrowserWindow = require("electron").BrowserWindow;
-let _             = require("underscore");
+let _             = require("lodash");
+let mkdirp        = require("mkdirp");
 let fs            = require("fs");
 let winston       = require("winston");
 
@@ -91,14 +92,16 @@ let staticData     = {
 		"spectatorRegion": "JP1"
 	}]
 };
+let appDataPath = app.getPath("userData") + "/";
+let replayPath = app.getPath("documents") + "/Analyze or Feed/Replays/";
 
 // Create folder for log files
-if (!fs.existsSync(app.getPath("userCache") + "/logs/")){
-	fs.mkdirSync(app.getPath("userCache") + "/logs/");
-}
+mkdirp.sync(appDataPath + "logs/");
+mkdirp.sync(appDataPath + "cache/");
+mkdirp.sync(replayPath);
 
 // Add loggers
-let logFile = app.getPath("userCache") + "/logs/" + (new Date()).getTime() + ".log";
+let logFile = appDataPath + "logs/" + (new Date()).getTime() + ".log";
 let logger = new winston.Logger({ transports: [] });
 logger.add(winston.transports.Console, {
 	"level": "debug"
@@ -107,11 +110,6 @@ logger.add(winston.transports.File, {
 	"filename": logFile,
 	"level": "debug"
 });
-
-if (!fs.existsSync("cache"))
-	fs.mkdir("cache");
-if (!fs.existsSync("replays"))
-	fs.mkdir("replays");
 
 // Add global error handlers
 process.on("uncaughtException", function (error) {
@@ -123,7 +121,7 @@ process.on("error", function (error) {
 
 // Log operating system
 logger.info("We are running on " + process.platform);
-logger.info("Application data path: " + app.getPath("userCache"));
+logger.info("Application data path: " + appDataPath);
 
 // Load our modules
 let aofParser = require(__dirname + "/modules/aof-parser.js")(logger);
@@ -141,7 +139,7 @@ app.on("window-all-closed", function() {
 // User settings
 function loadUserSettings(callback) {
 	logger.info("Loading user settings");
-	fs.readFile(app.getPath("userCache") + "/settings", function(err, data) {
+	fs.readFile(appDataPath + "settings", function(err, data) {
 		if (!err) {
 			settings = JSON.parse(data);
 		}
@@ -152,7 +150,7 @@ function loadUserSettings(callback) {
 function saveUserSettings() {
 	logger.info("Saving user settings");
 	settings.lolClientPath = lolClient.leaguePath();
-	fs.writeFileSync(app.getPath("userCache") + "/settings", JSON.stringify(settings, null, 2));
+	fs.writeFileSync(appDataPath + "settings", JSON.stringify(settings, null, 2));
 }
 
 // Check for updates
@@ -185,7 +183,7 @@ function checkForUpdates(callback) {
 // Get static data from api
 function getStaticData(callback) {
 	logger.info("Loading static data");
-	fs.readFile(app.getPath("userCache") + "/static", function(err, data) {
+	fs.readFile(appDataPath + "static", function(err, data) {
 		if (!err) {
 			logger.info("Reading static data from local cache");
 			staticData = JSON.parse(data);
@@ -199,7 +197,7 @@ function getStaticData(callback) {
 			}
 			staticData.regions = body.regions;
 			staticData.leagues = body.leagues;
-			fs.writeFileSync(app.getPath("userCache") + "/static", JSON.stringify(staticData));
+			fs.writeFileSync(appDataPath + "static", JSON.stringify(staticData));
 			
 			ddragonVersion = body.newestVersion.riotVersion + "/";
 
@@ -228,28 +226,28 @@ function getStaticData(callback) {
 
 // Extend the metadata of a replay with additional information
 function extendReplayMetadata(meta) {
-	meta.region = _.find(staticData.regions, function(region) { return region.id == meta.regionId }).shortName;
+	meta.region = _.find(staticData.regions, { "id": meta.regionId }).shortName;
 	
 	for (let i = 0; i < meta.players.length; i++) {
 		var p = meta.players[i];
 		
 		if (staticData.champions) {
-			let champion = _.find(staticData.champions, function(champion) { return champion.key == p.championId });
+			let champion = _.find(staticData.champions, { "key": p.championId });
 			p.champion = { name: champion.name, image: champion.image.full };
 		}
 		
 		if (staticData.leagues) {
-			let league = _.find(staticData.leagues, function(league) { return league.id == p.leagueId });
+			let league = _.find(staticData.leagues, { "id": p.leagueId });
 			p.league = { name: league.name, image: league.name.toLowerCase() + ".png" };
 		}
 		
 		if (staticData.summonerSpells) {
-			let d = _.find(staticData.summonerSpells, function(spell) { return spell.key == p.dId });
+			let d = _.find(staticData.summonerSpells, { "key": p.dId });
 			p.d = { name: d.name, image: d.image.full };
 		}
 		
 		if (staticData.summonerSpells) {
-			let f = _.find(staticData.summonerSpells, function(spell) { return spell.key == p.fId });
+			let f = _.find(staticData.summonerSpells, { "key": p.fId });
 			p.f = { name: f.name, image: f.image.full };
 		}
 	}
@@ -309,8 +307,9 @@ ipc.on("openReplay", function(event, args) {
 	let files = [];
 	if (!args) {
 		files = dialog.showOpenDialog(mainWindow, {
-			filters: [{ name: 'Replay File', extensions: ['aof'] }],
-			properties: [ "openFile" ]
+			filters: [{ name: 'AoF Replay File', extensions: ['aof'] }],
+			properties: [ "openFile" ],
+			defaultPath: replayPath
 		});
 	} else {
 		files.push(args);
@@ -434,7 +433,7 @@ let checkForLeague = function() {
 			}
 
 			game.state = 1;
-			game.region = _.find(staticData.regions, function(region) { return region.id == game.regionId; });
+			game.region = _.find(staticData.regions, { "id": game.regionId });
 			game.metaErrors = 0;
 			game.key = game.regionId + "-" + game.gameId;
 			game.oldKeyframeId = game.newestKeyframeId = 0;
@@ -621,7 +620,7 @@ let updateGame = function(game) {
 };
 
 // Downloads a keyframe/chunk for a recording game
-let dir = "cache/";
+let dir = appDataPath + "cache/";
 let options = { timeout: 10000, json: true };
 let downloadObject = function(game, typeId, objectId, tries) {
 	let start = process.hrtime();
@@ -796,7 +795,7 @@ let finishGame = function(game) {
 		c += chunk;
 	});
 
-	fs.writeFileSync("replays/" + game.region.shortName + "-" + game.gameId + ".aof", buff);
+	fs.writeFileSync(replayPath + game.region.shortName + "-" + game.gameId + ".aof", buff);
 	logger.info("Done");
 
 	leagueRecording = false;
